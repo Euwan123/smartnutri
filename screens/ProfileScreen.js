@@ -1,41 +1,60 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch } from 'react-native';
-import { useState } from 'react';
-
-const stats = [
-  { num: '28', label: 'Meals\nLogged' },
-  { num: '2', label: 'Children\nMonitored' },
-  { num: '14', label: 'Day\nStreak' },
-];
-
-const settingsItems = [
-  { icon: '🎯', label: 'Daily Calorie Goal', value: '2,000 kcal' },
-  { icon: '🚫', label: 'Dietary Restrictions', value: 'None' },
-  { icon: '📍', label: 'Location', value: 'Davao City' },
-  { icon: '🌐', label: 'Language', value: 'Filipino' },
-];
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
+import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 export default function ProfileScreen() {
   const [notifications, setNotifications] = useState(true);
   const [childAlerts, setChildAlerts] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!user) return;
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) setUserData(snap.data());
+    };
+    fetchUser();
+  }, []);
+
+  const logout = () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: () => signOut(auth) },
+    ]);
+  };
+
+  const displayName = user?.displayName || userData?.name || 'User';
+  const displayEmail = user?.email || '';
+  const initial = displayName[0]?.toUpperCase() || 'U';
+
+  const settingsItems = [
+    { icon: '🎯', label: 'Daily Calorie Goal', value: `${userData?.calorieGoal || 2000} kcal` },
+    { icon: '🚫', label: 'Dietary Restrictions', value: 'None' },
+    { icon: '📍', label: 'Location', value: userData?.location || 'Davao City' },
+    { icon: '🌐', label: 'Language', value: 'Filipino' },
+  ];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>J</Text>
+          <Text style={styles.avatarText}>{initial}</Text>
         </View>
-        <Text style={styles.name}>Juan Dela Cruz</Text>
-        <Text style={styles.email}>juan@email.com</Text>
+        <Text style={styles.name}>{displayName}</Text>
+        <Text style={styles.email}>{displayEmail}</Text>
         <View style={styles.roleBadge}>
           <Text style={styles.roleText}>👨‍👩‍👧 Parent & Health Tracker</Text>
         </View>
       </View>
 
       <View style={styles.statsRow}>
-        {stats.map((s, i) => (
+        {[['28', 'Meals\nLogged'], ['2', 'Children\nMonitored'], ['14', 'Day\nStreak']].map(([num, label], i) => (
           <View key={i} style={styles.statBox}>
-            <Text style={styles.statNum}>{s.num}</Text>
-            <Text style={styles.statLabel}>{s.label}</Text>
+            <Text style={styles.statNum}>{num}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
           </View>
         ))}
       </View>
@@ -74,10 +93,10 @@ export default function ProfileScreen() {
         <Text style={styles.cardTitle}>ℹ️ About</Text>
         <Text style={styles.aboutText}>Smart Nutri Scanner v1.0.0</Text>
         <Text style={styles.aboutText}>AI-Powered Meal Analyzer for Filipino Diets</Text>
-        <Text style={styles.aboutText}>Built with React Native + Expo</Text>
+        <Text style={styles.aboutText}>Built with React Native + Expo + Firebase</Text>
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>🚪 Log Out</Text>
       </TouchableOpacity>
 
