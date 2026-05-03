@@ -14,10 +14,11 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      setLoading(false);
     } catch (e) {
       Alert.alert('Login Failed', e.message);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

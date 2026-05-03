@@ -8,16 +8,26 @@ export default function ProfileScreen() {
   const [notifications, setNotifications] = useState(true);
   const [childAlerts, setChildAlerts] = useState(true);
   const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (!user) return;
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      if (snap.exists()) setUserData(snap.data());
+      try {
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) setUserData(snap.data());
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchUser();
-  }, []);
+  }, [user]);
 
   const logout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -25,6 +35,22 @@ export default function ProfileScreen() {
       { text: 'Log Out', style: 'destructive', onPress: () => signOut(auth) },
     ]);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Please log in</Text>
+      </View>
+    );
+  }
 
   const displayName = user?.displayName || userData?.name || 'User';
   const displayEmail = user?.email || '';
@@ -107,6 +133,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F1F8E9' },
+  loadingText: { flex: 1, textAlignVertical: 'center', textAlign: 'center', fontSize: 16, color: '#666' },
   header: { backgroundColor: '#1B5E20', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20 },
   avatarCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#A5D6A7', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 3, borderColor: '#fff' },
   avatarText: { fontSize: 36, fontWeight: 'bold', color: '#1B5E20' },

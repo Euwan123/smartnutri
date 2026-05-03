@@ -19,7 +19,7 @@ export default function SignupScreen({ navigation }) {
     setLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await updateProfile(result.user, { displayName: name });
+      await updateProfile(result.user, { displayName: name }).catch(err => console.error('Profile update failed:', err));
       await setDoc(doc(db, 'users', result.user.uid), {
         name,
         email: email.trim(),
@@ -28,10 +28,11 @@ export default function SignupScreen({ navigation }) {
         location: 'Davao City',
         children: [],
       });
+      setLoading(false);
     } catch (e) {
       Alert.alert('Signup Failed', e.message);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
