@@ -1,0 +1,35 @@
+@echo off
+cd /d "C:\Coding Projects\App Dev\Smart Nutri Scanner App\smartnutri"
+
+REM =============================================
+REM SMART NUTRI SCANNER - SETUP & RUN COMMANDS
+REM =============================================
+
+REM STEP 1 - Install Firebase
+REM npm install firebase
+
+REM STEP 2 - Install Navigation packages
+REM npm install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack
+
+REM STEP 3 - Install Expo screen dependencies
+REM npx expo install react-native-screens react-native-safe-area-context
+
+REM STEP 4 - Install Auth session and crypto
+REM npx expo install expo-auth-session expo-crypto
+
+REM STEP 5 - Install Google Sign In
+REM npm install @react-native-google-signin/google-signin
+
+REM STEP 6 - Install web support
+REM npx expo install react-dom react-native-web
+
+REM =============================================
+REM TO RUN THE APP - uncomment the line below
+REM =============================================
+
+npx expo start
+
+REM =============================================
+REM TO OPEN IN BROWSER AUTOMATICALLY
+REM =============================================
+REM npx expo start --web
