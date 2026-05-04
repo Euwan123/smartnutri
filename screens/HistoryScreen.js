@@ -3,12 +3,15 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function HistoryScreen() {
+  const { theme } = useTheme();
   const [meals, setMeals] = useState([]);
   const [grouped, setGrouped] = useState({});
   const [loading, setLoading] = useState(true);
@@ -61,11 +64,11 @@ export default function HistoryScreen() {
   const totalCal = selectedMeals.reduce((a, m) => a + (m.calories || 0), 0);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
+      <LinearGradient colors={[theme.primary, theme.secondary || theme.primary]} style={styles.header}>
         <Text style={styles.headerTitle}>📅 Meal History</Text>
         <Text style={styles.headerSub}>Track your eating patterns over time</Text>
-      </View>
+      </LinearGradient>
 
       <View style={styles.tabRow}>
         {['daily', 'weekly'].map(t => (
@@ -76,7 +79,7 @@ export default function HistoryScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1B5E20" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 60 }} />
       ) : (
         <>
           {tab === 'weekly' && (
@@ -87,7 +90,7 @@ export default function HistoryScreen() {
                   <TouchableOpacity key={i} style={styles.barCol} onPress={() => { setSelectedDate(d.toDateString()); setTab('daily'); }}>
                     <Text style={styles.barVal}>{weekStats[i] > 0 ? weekStats[i] : ''}</Text>
                     <View style={styles.barBg}>
-                      <View style={[styles.barFill, { height: `${(weekStats[i] / maxCal) * 100}%`, backgroundColor: d.toDateString() === selectedDate ? '#1B5E20' : '#A5D6A7' }]} />
+                      <View style={[styles.barFill, { height: `${(weekStats[i] / maxCal) * 100}%`, backgroundColor: d.toDateString() === selectedDate ? theme.primary : theme.accent }]} />
                     </View>
                     <Text style={[styles.barLabel, d.toDateString() === new Date().toDateString() && styles.barLabelToday]}>{DAYS[d.getDay()]}</Text>
                   </TouchableOpacity>
@@ -167,18 +170,18 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
-  header: { backgroundColor: '#1B5E20', padding: 24, paddingTop: 40 },
+  container: { flex: 1 },
+  header: { padding: 24, paddingTop: 40 },
   headerTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  headerSub: { color: '#A5D6A7', fontSize: 13, marginTop: 4 },
-  tabRow: { flexDirection: 'row', margin: 14, marginBottom: 0, backgroundColor: '#E8F5E9', borderRadius: 14, padding: 4 },
+  headerSub: { color: '#fff', fontSize: 13, marginTop: 4 },
+  tabRow: { flexDirection: 'row', margin: 14, marginBottom: 0, borderRadius: 14, padding: 4 },
   tab: { flex: 1, padding: 10, borderRadius: 12, alignItems: 'center' },
   tabActive: { backgroundColor: '#1B5E20' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#666' },
   tabTextActive: { color: '#fff' },
   card: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20', marginBottom: 14 },
+  cardTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 14 },
   totalCal: { fontSize: 13, color: '#FF7043', fontWeight: 'bold' },
   chartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140 },
   barCol: { flex: 1, alignItems: 'center', gap: 4 },
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
   dateChip: { width: 52, marginRight: 10, alignItems: 'center', padding: 10, borderRadius: 16, backgroundColor: '#fff', elevation: 2 },
   dateChipActive: { backgroundColor: '#1B5E20' },
   dateDay: { fontSize: 11, color: '#999', fontWeight: '600' },
-  dateDayActive: { color: '#A5D6A7' },
+  dateDayActive: { color: '#fff' },
   dateNum: { fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 4 },
   dateNumActive: { color: '#fff' },
   mealCard: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, backgroundColor: '#FAFAFA', borderRadius: 14, marginBottom: 10 },
@@ -214,6 +217,6 @@ const styles = StyleSheet.create({
   statsCard: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statBox: { alignItems: 'center' },
-  statNum: { fontSize: 26, fontWeight: 'bold', color: '#1B5E20' },
+  statNum: { fontSize: 26, fontWeight: 'bold' },
   statLabel: { fontSize: 11, color: '#888', textAlign: 'center', marginTop: 4 },
 });

@@ -6,17 +6,12 @@ import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db, storage } from '../firebase';
+import { useTheme, THEMES } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const THEMES = [
-  { name: 'Forest Green', primary: '#1B5E20', light: '#F1F8E9', accent: '#A5D6A7' },
-  { name: 'Ocean Blue', primary: '#0D47A1', light: '#E3F2FD', accent: '#90CAF9' },
-  { name: 'Sunset Orange', primary: '#E65100', light: '#FFF3E0', accent: '#FFCC80' },
-  { name: 'Purple Health', primary: '#4A148C', light: '#F3E5F5', accent: '#CE93D8' },
-  { name: 'Ruby Red', primary: '#B71C1C', light: '#FFEBEE', accent: '#EF9A9A' },
-];
 
 export default function ProfileScreen() {
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [childAlerts, setChildAlerts] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
@@ -25,7 +20,6 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
   const [themeModal, setThemeModal] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', birthdate: '', weight: '', height: '', location: '', calorieGoal: '' });
   const user = auth.currentUser;
@@ -107,15 +101,15 @@ export default function ProfileScreen() {
   const age = userData?.birthdate ? Math.floor((Date.now() - new Date(userData.birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: selectedTheme.light }]} showsVerticalScrollIndicator={false}>
-      <View style={[styles.header, { backgroundColor: selectedTheme.primary }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
         <TouchableOpacity style={styles.avatarWrapper} onPress={pickPhoto} disabled={uploadingPhoto}>
           {uploadingPhoto ? (
             <ActivityIndicator color="#fff" size="large" />
           ) : photoURL ? (
             <Image source={{ uri: photoURL }} style={styles.avatarImage} />
           ) : (
-            <View style={[styles.avatarCircle, { borderColor: selectedTheme.accent }]}>
+            <View style={[styles.avatarCircle, { borderColor: theme.accent }]}>
               <Text style={styles.avatarText}>{initial}</Text>
             </View>
           )}
@@ -127,24 +121,24 @@ export default function ProfileScreen() {
         <Text style={styles.email}>{user?.email}</Text>
         {age && <Text style={styles.age}>Age {age} · {userData?.location || 'Davao City'}</Text>}
         <View style={styles.headerActions}>
-          <TouchableOpacity style={[styles.headerBtn, { borderColor: selectedTheme.accent }]} onPress={() => setEditModal(true)}>
+          <TouchableOpacity style={[styles.headerBtn, { borderColor: theme.accent }]} onPress={() => setEditModal(true)}>
             <Text style={styles.headerBtnText}>✏️ Edit Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.headerBtn, { borderColor: selectedTheme.accent }]} onPress={() => setThemeModal(true)}>
+          <TouchableOpacity style={[styles.headerBtn, { borderColor: theme.accent }]} onPress={() => setThemeModal(true)}>
             <Text style={styles.headerBtnText}>🎨 Theme</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={selectedTheme.primary} style={{ marginTop: 30 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 30 }} />
       ) : (
         <>
           <View style={styles.statsRow}>
             {[[stats.meals, 'Meals\nLogged', '🍽️'], [stats.children, 'Children\nMonitored', '👶'], [stats.streak, 'Day\nStreak', '🔥']].map(([num, label, icon], i) => (
               <View key={i} style={styles.statBox}>
                 <Text style={styles.statIcon}>{icon}</Text>
-                <Text style={[styles.statNum, { color: selectedTheme.primary }]}>{num}</Text>
+                <Text style={[styles.statNum, { color: theme.primary }]}>{num}</Text>
                 <Text style={styles.statLabel}>{label}</Text>
               </View>
             ))}
@@ -152,7 +146,7 @@ export default function ProfileScreen() {
 
           {bmi && (
             <View style={styles.card}>
-              <Text style={[styles.cardTitle, { color: selectedTheme.primary }]}>⚖️ Health Stats</Text>
+              <Text style={[styles.cardTitle, { color: theme.primary }]}>⚖️ Health Stats</Text>
               <View style={styles.healthRow}>
                 {[['Weight', `${userData.weight}kg`, '#42A5F5'], ['Height', `${userData.height}cm`, '#AB47BC'], ['BMI', bmi, bmiColor]].map(([l, v, c]) => (
                   <View key={l} style={styles.healthBox}>
@@ -168,7 +162,7 @@ export default function ProfileScreen() {
           )}
 
           <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: selectedTheme.primary }]}>⚙️ Preferences</Text>
+            <Text style={[styles.cardTitle, { color: theme.primary }]}>⚙️ Preferences</Text>
             {[
               { icon: '🎯', label: 'Daily Calorie Goal', value: `${userData?.calorieGoal || 2000} kcal` },
               { icon: '📍', label: 'Location', value: userData?.location || 'Davao City' },
@@ -184,7 +178,7 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: selectedTheme.primary }]}>🔔 Notifications & Privacy</Text>
+            <Text style={[styles.cardTitle, { color: theme.primary }]}>🔔 Notifications & Privacy</Text>
             {[
               { label: 'Meal Reminders', sub: 'Get reminded to log meals', val: notifications, set: setNotifications },
               { label: 'Child Nutrition Alerts', sub: 'Alerts when nutrients are low', val: childAlerts, set: setChildAlerts },
@@ -195,13 +189,13 @@ export default function ProfileScreen() {
                   <Text style={styles.toggleLabel}>{item.label}</Text>
                   <Text style={styles.toggleSub}>{item.sub}</Text>
                 </View>
-                <Switch value={item.val} onValueChange={item.set} trackColor={{ true: selectedTheme.primary }} thumbColor="#fff" />
+                <Switch value={item.val} onValueChange={item.set} trackColor={{ true: theme.primary }} thumbColor="#fff" />
               </View>
             ))}
           </View>
 
           <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: selectedTheme.primary }]}>ℹ️ About</Text>
+            <Text style={[styles.cardTitle, { color: theme.primary }]}>ℹ️ About</Text>
             <Text style={styles.aboutText}>Smart Nutri Scanner v1.0.0</Text>
             <Text style={styles.aboutText}>AI-Powered Meal Analyzer for Filipino Diets</Text>
             <Text style={styles.aboutText}>Built with React Native + Expo + Firebase</Text>
@@ -216,14 +210,14 @@ export default function ProfileScreen() {
       <Modal visible={editModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <ScrollView style={styles.modalBox} showsVerticalScrollIndicator={false}>
-            <Text style={[styles.modalTitle, { color: selectedTheme.primary }]}>✏️ Edit Profile</Text>
+            <Text style={[styles.modalTitle, { color: theme.primary }]}>✏️ Edit Profile</Text>
             {[['name', 'Full Name', 'default'], ['birthdate', 'Birthdate (YYYY-MM-DD)', 'default'], ['weight', 'Weight (kg)', 'decimal-pad'], ['height', 'Height (cm)', 'decimal-pad'], ['location', 'Location', 'default'], ['calorieGoal', 'Daily Calorie Goal', 'numeric']].map(([key, ph, kb]) => (
               <View key={key}>
                 <Text style={styles.inputLabel}>{ph}</Text>
                 <TextInput style={styles.input} placeholder={ph} keyboardType={kb} value={editForm[key]} onChangeText={v => setEditForm({ ...editForm, [key]: v })} />
               </View>
             ))}
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: selectedTheme.primary }]} onPress={saveProfile}>
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.primary }]} onPress={saveProfile}>
               <Text style={styles.saveBtnText}>Save Changes</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModal(false)}>
@@ -237,14 +231,14 @@ export default function ProfileScreen() {
       <Modal visible={themeModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.themeBox}>
-            <Text style={[styles.modalTitle, { color: selectedTheme.primary }]}>🎨 Choose Theme</Text>
-            {THEMES.map((theme, i) => (
-              <TouchableOpacity key={i} style={[styles.themeOption, selectedTheme.name === theme.name && styles.themeOptionActive, { borderColor: theme.primary }]} onPress={() => { setSelectedTheme(theme); setThemeModal(false); }}>
-                <View style={[styles.themePreview, { backgroundColor: theme.primary }]} />
-                <View style={[styles.themePreview, { backgroundColor: theme.accent }]} />
-                <View style={[styles.themePreview, { backgroundColor: theme.light, borderWidth: 1, borderColor: '#eee' }]} />
-                <Text style={[styles.themeLabel, { color: theme.primary }]}>{theme.name}</Text>
-                {selectedTheme.name === theme.name && <Text style={{ color: theme.primary, fontSize: 18 }}>✓</Text>}
+            <Text style={[styles.modalTitle, { color: theme.primary }]}>🎨 Choose Theme</Text>
+            {THEMES.map((t, i) => (
+              <TouchableOpacity key={i} style={[styles.themeOption, theme.name === t.name && styles.themeOptionActive, { borderColor: t.primary }]} onPress={() => { setTheme(t); setThemeModal(false); }}>
+                <View style={[styles.themePreview, { backgroundColor: t.primary }]} />
+                <View style={[styles.themePreview, { backgroundColor: t.accent }]} />
+                <View style={[styles.themePreview, { backgroundColor: t.light, borderWidth: 1, borderColor: '#eee' }]} />
+                <Text style={[styles.themeLabel, { color: t.primary }]}>{t.name}</Text>
+                {theme.name === t.name && <Text style={{ color: t.primary, fontSize: 18 }}>✓</Text>}
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setThemeModal(false)}>

@@ -3,6 +3,9 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useTheme } from '../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +42,7 @@ const ringStyles = StyleSheet.create({
 });
 
 export default function HomeScreen({ navigation }) {
+  const { theme } = useTheme();
   const [meals, setMeals] = useState([]);
   const [stats, setStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [streak, setStreak] = useState(0);
@@ -104,9 +108,9 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(useCallback(() => { fadeAnim.setValue(0); fetchData(); }, []));
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor="#1B5E20" />
-      <View style={styles.banner}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.primary} />
+      <LinearGradient colors={[theme.primary, theme.secondary || theme.primary]} style={styles.banner}>
         <View style={styles.bannerTop}>
           <View>
             <Text style={styles.greeting}>{greeting}, {userName} 👋</Text>
@@ -114,25 +118,25 @@ export default function HomeScreen({ navigation }) {
           </View>
           {streak > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakFire}>🔥</Text>
+              <Ionicons name="flame" size={20} color="#FF7043" />
               <Text style={styles.streakNum}>{streak}</Text>
             </View>
           )}
         </View>
         <Text style={styles.bannerSub}>AI-Powered Filipino Meal Analyzer</Text>
-      </View>
+      </LinearGradient>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1B5E20" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 60 }} />
       ) : (
         <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.light }]}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>📊 Today's Nutrition</Text>
+              <Text style={[styles.cardTitle, { color: theme.primary }]}>📊 Today's Nutrition</Text>
               <Text style={styles.cardSub}>{stats.calories} / 2000 kcal</Text>
             </View>
             <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${Math.min((stats.calories / 2000) * 100, 100)}%` }]} />
+              <View style={[styles.progressBarFill, { width: `${Math.min((stats.calories / 2000) * 100, 100)}%`, backgroundColor: theme.primary }]} />
             </View>
             <View style={styles.ringsRow}>
               <NutrientRing value={stats.calories} max={2000} color="#FF7043" label="Calories" unit="kcal" />
@@ -142,10 +146,10 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={styles.aiCard}>
+          <View style={[styles.aiCard, { backgroundColor: theme.light, borderLeftColor: theme.primary }]}>
             <View style={styles.aiHeader}>
               <Text style={styles.aiIcon}>🤖</Text>
-              <Text style={styles.aiTitle}>AI Nutrition Tip</Text>
+              <Text style={[styles.aiTitle, { color: theme.primary }]}>AI Nutrition Tip</Text>
             </View>
             <Text style={styles.aiText}>{aiTip}</Text>
           </View>
@@ -161,18 +165,18 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           )}
 
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.light }]}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>🍽️ Recent Meals</Text>
+              <Text style={[styles.cardTitle, { color: theme.primary }]}>🍽️ Recent Meals</Text>
               <TouchableOpacity onPress={() => navigation.navigate('History')}>
-                <Text style={styles.seeAll}>See All →</Text>
+                <Text style={[styles.seeAll, { color: theme.primary }]}>See All →</Text>
               </TouchableOpacity>
             </View>
             {meals.length === 0 ? (
               <View style={styles.emptyMeals}>
                 <Text style={styles.emptyIcon}>🍽️</Text>
                 <Text style={styles.emptyText}>No meals logged yet</Text>
-                <TouchableOpacity style={styles.scanNowBtn} onPress={() => navigation.navigate('Scan Meal')}>
+                <TouchableOpacity style={[styles.scanNowBtn, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('Scan Meal')}>
                   <Text style={styles.scanNowText}>📷 Scan Your First Meal</Text>
                 </TouchableOpacity>
               </View>
@@ -202,27 +206,26 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
-  banner: { backgroundColor: '#1B5E20', padding: 24, paddingTop: 40, paddingBottom: 28 },
+  container: { flex: 1 },
+  banner: { padding: 24, paddingTop: 40, paddingBottom: 28 },
   bannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
-  greeting: { color: '#A5D6A7', fontSize: 13, marginBottom: 4 },
+  greeting: { color: '#fff', fontSize: 13, marginBottom: 4 },
   bannerTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  bannerSub: { color: '#C8E6C9', fontSize: 13 },
+  bannerSub: { color: '#fff', fontSize: 13 },
   streakBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 10, alignItems: 'center', minWidth: 54 },
-  streakFire: { fontSize: 20 },
   streakNum: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   card: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20' },
+  cardTitle: { fontSize: 15, fontWeight: 'bold' },
   cardSub: { fontSize: 12, color: '#999' },
-  seeAll: { fontSize: 13, color: '#1B5E20', fontWeight: '600' },
+  seeAll: { fontSize: 13, fontWeight: '600' },
   progressBarBg: { height: 6, backgroundColor: '#eee', borderRadius: 4, marginBottom: 16, overflow: 'hidden' },
-  progressBarFill: { height: 6, backgroundColor: '#1B5E20', borderRadius: 4 },
+  progressBarFill: { height: 6, borderRadius: 4 },
   ringsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  aiCard: { backgroundColor: '#E8F5E9', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#1B5E20' },
+  aiCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4 },
   aiHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
   aiIcon: { fontSize: 20 },
-  aiTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20' },
+  aiTitle: { fontSize: 15, fontWeight: 'bold' },
   aiText: { color: '#444', fontSize: 14, lineHeight: 22 },
   alertCard: { backgroundColor: '#FFF8E1', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FFA000' },
   alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
@@ -241,6 +244,6 @@ const styles = StyleSheet.create({
   emptyMeals: { alignItems: 'center', paddingVertical: 24 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
   emptyText: { color: '#aaa', fontSize: 14, marginBottom: 16 },
-  scanNowBtn: { backgroundColor: '#1B5E20', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  scanNowBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
   scanNowText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

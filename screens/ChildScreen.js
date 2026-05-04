@@ -3,11 +3,14 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const nutrientIcons = { iron: '🩸', vitA: '👁️', zinc: '⚡', calcium: '🦴' };
 const nutrientLabels = { iron: 'Iron', vitA: 'Vitamin A', zinc: 'Zinc', calcium: 'Calcium' };
 const nutrientUnits = { iron: 'mg', vitA: 'mcg', zinc: 'mg', calcium: 'mg' };
 const nutrientMax = { iron: 10, vitA: 400, zinc: 5, calcium: 700 };
+const { theme } = useTheme();
 
 const getStatus = (child) => {
   const low = child.iron < 6 || child.vitA < 240 || child.zinc < 3;
@@ -15,6 +18,7 @@ const getStatus = (child) => {
 };
 
 export default function ChildScreen() {
+  const { theme } = useTheme();
   const [children, setChildren] = useState([]);
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -68,14 +72,14 @@ export default function ChildScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.headerBox}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
+      <LinearGradient colors={[theme.primary, theme.secondary || theme.primary]} style={styles.headerBox}>
         <Text style={styles.heading}>👶 Child Nutrition Monitor</Text>
         <Text style={styles.headingSub}>Track your children's daily nutrient intake</Text>
-      </View>
+      </LinearGradient>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1B5E20" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
       ) : children.length === 0 ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyIcon}>👶</Text>
@@ -170,13 +174,13 @@ export default function ChildScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
-  headerBox: { backgroundColor: '#1B5E20', padding: 24 },
+  container: { flex: 1 },
+  headerBox: { padding: 24 },
   heading: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  headingSub: { color: '#A5D6A7', fontSize: 13, marginTop: 4 },
+  headingSub: { color: '#fff', fontSize: 13, marginTop: 4 },
   card: { backgroundColor: '#fff', borderRadius: 16, margin: 12, marginBottom: 0, padding: 16, elevation: 3 },
   cardHeader: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#1B5E20', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   childInfo: { flex: 1 },
   childName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
   tipText: { fontSize: 13, color: '#795548', lineHeight: 20 },
   deleteBtn: { padding: 10, alignItems: 'center', marginTop: 4 },
   deleteBtnText: { color: '#E53935', fontSize: 14, fontWeight: '600' },
-  addBtn: { backgroundColor: '#1B5E20', margin: 12, marginTop: 16, padding: 16, borderRadius: 14, alignItems: 'center', elevation: 3 },
+  addBtn: { margin: 12, marginTop: 16, padding: 16, borderRadius: 14, alignItems: 'center', elevation: 3 },
   addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   emptyBox: { alignItems: 'center', padding: 40 },
   emptyIcon: { fontSize: 60, marginBottom: 12 },
@@ -204,10 +208,10 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, color: '#888', textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1B5E20', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#999', marginBottom: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 1 },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 14, fontSize: 15, marginBottom: 12, backgroundColor: '#FAFAFA' },
-  btn: { backgroundColor: '#1B5E20', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 10 },
+  btn: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 10 },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   cancelBtn: { alignItems: 'center', padding: 10 },
   cancelBtnText: { color: '#999', fontSize: 15 },

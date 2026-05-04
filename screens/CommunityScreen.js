@@ -3,10 +3,14 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, getDocs, addDoc, orderBy, query, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+const { theme } = useTheme();
 
 export default function CommunityScreen() {
+  const { theme } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
@@ -64,13 +68,13 @@ export default function CommunityScreen() {
   const myPosts = posts.filter(p => p.userId === user.uid);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.light }]}>
+      <LinearGradient colors={[theme.primary, theme.secondary || theme.primary]} style={styles.header}>
         <Text style={styles.headerTitle}>👥 Community</Text>
         <TouchableOpacity style={styles.composeBtn} onPress={() => setShowCompose(!showCompose)}>
           <Text style={styles.composeBtnText}>{showCompose ? '✕ Cancel' : '✏️ Post'}</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {showCompose && (
         <View style={styles.composeBox}>
@@ -91,7 +95,7 @@ export default function CommunityScreen() {
           />
           <View style={styles.composeFooter}>
             <Text style={styles.charCount}>{caption.length}/300</Text>
-            <TouchableOpacity style={styles.postBtn} onPress={sharePost} disabled={posting}>
+        <TouchableOpacity style={[styles.postBtn, { backgroundColor: theme.primary }]} onPress={sharePost} disabled={posting}>
               {posting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.postBtnText}>Share 🌿</Text>}
             </TouchableOpacity>
           </View>
@@ -107,7 +111,7 @@ export default function CommunityScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1B5E20" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 60 }} />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, paddingTop: 8 }}>
           {(tab === 'feed' ? posts : myPosts).length === 0 ? (
@@ -168,29 +172,29 @@ export default function CommunityScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
-  header: { backgroundColor: '#1B5E20', padding: 24, paddingTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  container: { flex: 1 },
+  header: { padding: 24, paddingTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   composeBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   composeBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
   composeBox: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 16, elevation: 4 },
   composeHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  composeAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1B5E20', alignItems: 'center', justifyContent: 'center' },
+  composeAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   composeAvatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   composeName: { fontSize: 15, fontWeight: '600', color: '#333' },
   composeInput: { borderWidth: 1, borderColor: '#eee', borderRadius: 14, padding: 14, fontSize: 14, color: '#333', minHeight: 80, textAlignVertical: 'top', backgroundColor: '#FAFAFA' },
   composeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   charCount: { fontSize: 12, color: '#bbb' },
-  postBtn: { backgroundColor: '#1B5E20', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
+  postBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   postBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  tabRow: { flexDirection: 'row', margin: 14, marginBottom: 4, backgroundColor: '#E8F5E9', borderRadius: 14, padding: 4 },
+  tabRow: { flexDirection: 'row', margin: 14, marginBottom: 4, borderRadius: 14, padding: 4 },
   tab: { flex: 1, padding: 10, borderRadius: 12, alignItems: 'center' },
   tabActive: { backgroundColor: '#1B5E20' },
   tabText: { fontSize: 13, fontWeight: '600', color: '#666' },
   tabTextActive: { color: '#fff' },
   postCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12, elevation: 2 },
   postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
-  postAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1B5E20', alignItems: 'center', justifyContent: 'center' },
+  postAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   postAvatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   postMeta: { flex: 1 },
   postName: { fontSize: 14, fontWeight: 'bold', color: '#333' },

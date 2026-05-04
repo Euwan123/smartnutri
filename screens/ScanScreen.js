@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { useTheme } from '../context/ThemeContext';
 
 const filipinoDishes = [
   { name: 'Sinigang na Baboy', icon: '🍲', calories: 320, protein: 22, carbs: 18, fat: 14, iron: 3.2, vitA: 120, zinc: 2.1 },
@@ -18,6 +19,7 @@ const filipinoDishes = [
 ];
 
 export default function ScanScreen() {
+  const { theme } = useTheme();
   const [stage, setStage] = useState('idle');
   const [result, setResult] = useState(null);
   const [image, setImage] = useState(null);
@@ -88,7 +90,7 @@ export default function ScanScreen() {
   const reset = () => { setStage('idle'); setResult(null); setImage(null); setSaved(false); };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {stage === 'idle' && (
         <View style={styles.idleBox}>
           <View style={styles.cameraFrame}>
@@ -171,27 +173,27 @@ const styles = StyleSheet.create({
   idleBox: { alignItems: 'center' },
   cameraFrame: { width: 180, height: 180, borderRadius: 24, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#1B5E20', borderStyle: 'dashed', marginBottom: 20 },
   cameraIcon: { fontSize: 70 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#1B5E20', marginBottom: 8 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
   sub: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 22 },
-  btn: { backgroundColor: '#1B5E20', padding: 16, borderRadius: 14, width: '100%', alignItems: 'center', marginBottom: 12, elevation: 3 },
+  btn: { padding: 16, borderRadius: 14, width: '100%', alignItems: 'center', marginBottom: 12, elevation: 3 },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  btnOutline: { borderWidth: 2, borderColor: '#1B5E20', padding: 16, borderRadius: 14, width: '100%', alignItems: 'center', marginBottom: 24 },
-  btnOutlineText: { color: '#1B5E20', fontWeight: 'bold', fontSize: 16 },
+  btnOutline: { borderWidth: 2, padding: 16, borderRadius: 14, width: '100%', alignItems: 'center', marginBottom: 24 },
+  btnOutlineText: { fontWeight: 'bold', fontSize: 16 },
   tipsBox: { backgroundColor: '#fff', borderRadius: 14, padding: 16, width: '100%', elevation: 2 },
   tipsTitle: { fontWeight: 'bold', color: '#333', marginBottom: 8 },
   tip: { color: '#666', fontSize: 13, marginBottom: 4 },
   scanningBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
   previewImage: { width: '100%', height: 200, borderRadius: 16, marginBottom: 24 },
-  pulseCircle: { width: 140, height: 140, borderRadius: 70, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 3, borderColor: '#1B5E20' },
+  pulseCircle: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 3 },
   scanIcon: { fontSize: 60 },
-  scanningText: { fontSize: 20, fontWeight: 'bold', color: '#1B5E20', marginBottom: 8 },
+  scanningText: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
   scanningSubText: { fontSize: 13, color: '#888', textAlign: 'center' },
   resultBox: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 4 },
   resultImage: { width: '100%', height: 180, borderRadius: 16, marginBottom: 16 },
   resultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  resultTitle: { fontSize: 18, fontWeight: 'bold', color: '#1B5E20', flex: 1 },
+  resultTitle: { fontSize: 18, fontWeight: 'bold', flex: 1 },
   confidenceBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  confidenceText: { color: '#1B5E20', fontSize: 12, fontWeight: 'bold' },
+  confidenceText: { fontSize: 12, fontWeight: 'bold' },
   sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#999', marginBottom: 10, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   macroBox: { alignItems: 'center', flex: 1, backgroundColor: '#F9F9F9', borderRadius: 12, padding: 10 },
@@ -202,9 +204,9 @@ const styles = StyleSheet.create({
   microLabel: { fontSize: 14, color: '#555' },
   microVal: { fontSize: 14, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  logBtn: { flex: 1, backgroundColor: '#1B5E20', padding: 14, borderRadius: 12, alignItems: 'center' },
+  logBtn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
   logBtnDone: { backgroundColor: '#388E3C' },
   logBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  retryBtn: { flex: 1, borderWidth: 2, borderColor: '#1B5E20', padding: 14, borderRadius: 12, alignItems: 'center' },
-  retryBtnText: { color: '#1B5E20', fontWeight: 'bold', fontSize: 14 },
+  retryBtn: { flex: 1, borderWidth: 2, padding: 14, borderRadius: 12, alignItems: 'center' },
+  retryBtnText: { fontWeight: 'bold', fontSize: 14 },
 });
