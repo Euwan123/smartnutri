@@ -1,13 +1,10 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, getDocs, addDoc, orderBy, query, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
-const { theme } = useTheme();
 
 export default function CommunityScreen() {
   const { theme } = useTheme();
@@ -79,7 +76,7 @@ export default function CommunityScreen() {
       {showCompose && (
         <View style={styles.composeBox}>
           <View style={styles.composeHeader}>
-            <View style={styles.composeAvatar}>
+            <View style={[styles.composeAvatar, { backgroundColor: theme.primary }]}>
               <Text style={styles.composeAvatarText}>{(user.displayName || 'A')[0]}</Text>
             </View>
             <Text style={styles.composeName}>{user.displayName || 'You'}</Text>
@@ -95,7 +92,7 @@ export default function CommunityScreen() {
           />
           <View style={styles.composeFooter}>
             <Text style={styles.charCount}>{caption.length}/300</Text>
-        <TouchableOpacity style={[styles.postBtn, { backgroundColor: theme.primary }]} onPress={sharePost} disabled={posting}>
+            <TouchableOpacity style={[styles.postBtn, { backgroundColor: theme.primary }]} onPress={sharePost} disabled={posting}>
               {posting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.postBtnText}>Share 🌿</Text>}
             </TouchableOpacity>
           </View>
@@ -104,7 +101,7 @@ export default function CommunityScreen() {
 
       <View style={styles.tabRow}>
         {['feed', 'my posts'].map(t => (
-          <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
+          <TouchableOpacity key={t} style={[styles.tab, tab === t && [styles.tabActive, { backgroundColor: theme.primary }]]} onPress={() => setTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t === 'feed' ? '🌎 Feed' : '👤 My Posts'}</Text>
           </TouchableOpacity>
         ))}
@@ -117,11 +114,11 @@ export default function CommunityScreen() {
           {(tab === 'feed' ? posts : myPosts).length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptyIcon}>🌱</Text>
-              <Text style={styles.emptyTitle}>{tab === 'feed' ? 'No posts yet' : 'You haven\'t posted yet'}</Text>
+              <Text style={styles.emptyTitle}>{tab === 'feed' ? 'No posts yet' : "You haven't posted yet"}</Text>
               <Text style={styles.emptySub}>Be the first to share a meal or nutrition tip!</Text>
             </View>
           ) : (
-            (tab === 'feed' ? posts : myPosts).map((post, i) => {
+            (tab === 'feed' ? posts : myPosts).map((post) => {
               const liked = post.likes?.includes(user.uid);
               const timeAgo = (() => {
                 const diff = Date.now() - new Date(post.createdAt).getTime();
@@ -136,7 +133,7 @@ export default function CommunityScreen() {
               return (
                 <View key={post.id} style={styles.postCard}>
                   <View style={styles.postHeader}>
-                    <View style={styles.postAvatar}>
+                    <View style={[styles.postAvatar, { backgroundColor: theme.primary }]}>
                       <Text style={styles.postAvatarText}>{post.userInitial}</Text>
                     </View>
                     <View style={styles.postMeta}>
@@ -189,7 +186,7 @@ const styles = StyleSheet.create({
   postBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   tabRow: { flexDirection: 'row', margin: 14, marginBottom: 4, borderRadius: 14, padding: 4 },
   tab: { flex: 1, padding: 10, borderRadius: 12, alignItems: 'center' },
-  tabActive: { backgroundColor: '#1B5E20' },
+  tabActive: {},
   tabText: { fontSize: 13, fontWeight: '600', color: '#666' },
   tabTextActive: { color: '#fff' },
   postCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12, elevation: 2 },

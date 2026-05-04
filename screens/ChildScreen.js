@@ -10,7 +10,6 @@ const nutrientIcons = { iron: '🩸', vitA: '👁️', zinc: '⚡', calcium: '�
 const nutrientLabels = { iron: 'Iron', vitA: 'Vitamin A', zinc: 'Zinc', calcium: 'Calcium' };
 const nutrientUnits = { iron: 'mg', vitA: 'mcg', zinc: 'mg', calcium: 'mg' };
 const nutrientMax = { iron: 10, vitA: 400, zinc: 5, calcium: 700 };
-const { theme } = useTheme();
 
 const getStatus = (child) => {
   const low = child.iron < 6 || child.vitA < 240 || child.zinc < 3;
@@ -94,7 +93,7 @@ export default function ChildScreen() {
           return (
             <TouchableOpacity key={child.id} style={styles.card} onPress={() => setSelected(isOpen ? null : i)} activeOpacity={0.85}>
               <View style={styles.cardHeader}>
-                <View style={styles.avatar}>
+                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
                   <Text style={styles.avatarText}>{child.name[0]}</Text>
                 </View>
                 <View style={styles.childInfo}>
@@ -142,7 +141,7 @@ export default function ChildScreen() {
         })
       )}
 
-      <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={() => setModalVisible(true)}>
         <Text style={styles.addBtnText}>+ Add Child Profile</Text>
       </TouchableOpacity>
 
@@ -157,7 +156,7 @@ export default function ChildScreen() {
             {[['iron', 'Iron (mg)'], ['vitA', 'Vitamin A (mcg)'], ['zinc', 'Zinc (mg)'], ['calcium', 'Calcium (mg)']].map(([key, ph]) => (
               <TextInput key={key} style={styles.input} placeholder={ph} keyboardType="decimal-pad" value={form[key]} onChangeText={v => setForm({ ...form, [key]: v })} />
             ))}
-            <TouchableOpacity style={styles.btn} onPress={addChild} disabled={saving}>
+            <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={addChild} disabled={saving}>
               {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Save Child Profile</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
