@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +19,6 @@ import ChildScreen from './screens/ChildScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-const { width } = Dimensions.get('window');
 
 function CustomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
@@ -37,37 +36,19 @@ function CustomTabBar({ state, descriptors, navigation }) {
       {tabs.map((tab, index) => {
         const route = state.routes[index];
         const isFocused = state.index === index;
-
         if (tab.isCenter) {
           return (
-            <TouchableOpacity
-              key={index}
-              style={styles.centerBtn}
-              onPress={() => navigation.navigate('ScanTab')}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity key={index} style={styles.centerBtn} onPress={() => navigation.navigate('ScanTab')} activeOpacity={0.8}>
               <View style={[styles.centerBtnInner, { backgroundColor: theme.primary }]}>
                 <Ionicons name="camera" size={28} color="#fff" />
               </View>
             </TouchableOpacity>
           );
         }
-
         return (
-          <TouchableOpacity
-            key={index}
-            style={styles.tabItem}
-            onPress={() => navigation.navigate(route.name)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isFocused ? tab.icon : tab.iconOutline}
-              size={24}
-              color={isFocused ? theme.primary : '#bbb'}
-            />
-            <Text style={[styles.tabLabel, { color: isFocused ? theme.primary : '#bbb' }]}>
-              {tab.name === 'ScanTab' ? 'Scan' : tab.name}
-            </Text>
+          <TouchableOpacity key={index} style={styles.tabItem} onPress={() => navigation.navigate(route.name)} activeOpacity={0.7}>
+            <Ionicons name={isFocused ? tab.icon : tab.iconOutline} size={24} color={isFocused ? theme.primary : '#bbb'} />
+            <Text style={[styles.tabLabel, { color: isFocused ? theme.primary : '#bbb' }]}>{tab.name === 'ScanTab' ? 'Scan' : tab.name}</Text>
           </TouchableOpacity>
         );
       })}
@@ -76,16 +57,10 @@ function CustomTabBar({ state, descriptors, navigation }) {
 }
 
 function MainTabs() {
-  const { theme } = useTheme();
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.primary },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
-        headerShown: false,
-      }}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="History" component={HistoryScreen} />
