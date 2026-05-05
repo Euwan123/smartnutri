@@ -21,6 +21,8 @@ import WaterScreen from './screens/WaterScreen';
 import ExerciseScreen from './screens/ExerciseScreen';
 import MealPlanScreen from './screens/MealPlanScreen';
 import ExportScreen from './screens/ExportScreen';
+import RecipeScreen from './screens/RecipeScreen';
+import RecipeDetailScreen from './screens/RecipeDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -105,6 +107,8 @@ function AppNavigator() {
             <Stack.Screen name="Exercise" component={ExerciseScreen} />
             <Stack.Screen name="MealPlan" component={MealPlanScreen} />
             <Stack.Screen name="Export" component={ExportScreen} />
+            <Stack.Screen name="Recipe" component={RecipeScreen} />
+            <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
           </>
         ) : (
           <>

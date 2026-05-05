@@ -181,6 +181,15 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.mealPlanText}>Plan your meals and stay on track with nutrition goals.</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={[styles.recipeCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Recipe')}>
+            <View style={styles.recipeHeader}>
+              <Text style={styles.recipeIcon}>🍳</Text>
+              <Text style={[styles.recipeTitle, { color: theme.primary }]}>Recipe Suggestions</Text>
+              <Text style={styles.recipeArrow}>›</Text>
+            </View>
+            <Text style={styles.recipeText}>Discover personalized recipes based on your meal history.</Text>
+          </TouchableOpacity>
+
           {childAlerts.length > 0 && (
             <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Child')}>
               <View style={styles.alertHeader}>
@@ -272,6 +281,12 @@ const styles = StyleSheet.create({
   mealPlanTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
   mealPlanArrow: { fontSize: 20, color: '#AB47BC' },
   mealPlanText: { color: '#444', fontSize: 14, lineHeight: 22 },
+  recipeCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#4CAF50' },
+  recipeHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
+  recipeIcon: { fontSize: 18 },
+  recipeTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
+  recipeArrow: { fontSize: 20, color: '#4CAF50' },
+  recipeText: { color: '#444', fontSize: 14, lineHeight: 22 },
   alertCard: { backgroundColor: '#FFF8E1', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FFA000' },
   alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
   alertIcon: { fontSize: 18 },

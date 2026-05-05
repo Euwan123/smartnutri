@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { analyzeFoodImage } from '../services/AIScanService';
+import { useTheme } from '../context/ThemeContext';
 
 const filipinoDishes = [
   { name: 'Sinigang na Baboy', icon: '🍲', calories: 320, protein: 22, carbs: 18, fat: 14, iron: 3.2, vitA: 120, zinc: 2.1 },
@@ -18,13 +19,14 @@ const filipinoDishes = [
   { name: 'Bangus Sardines', icon: '🐟', calories: 240, protein: 24, carbs: 4, fat: 14, iron: 1.8, vitA: 95, zinc: 1.9 },
 ];
 
-export default function ScanScreen() {
+export default function ScanScreen({ navigation }) {
   const { theme } = useTheme();
   const [stage, setStage] = useState('idle');
   const [result, setResult] = useState(null);
   const [image, setImage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [portionSize, setPortionSize] = useState(1);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -80,17 +82,18 @@ export default function ScanScreen() {
       await addDoc(collection(db, 'users', user.uid, 'meals'), {
         name: result.name,
         icon: result.icon,
-        calories: result.calories,
-        protein: result.protein,
-        carbs: result.carbs,
-        fat: result.fat,
-        iron: result.iron,
-        vitA: result.vitA,
-        zinc: result.zinc,
+        calories: Math.round(result.calories * portionSize),
+        protein: Math.round(result.protein * portionSize),
+        carbs: Math.round(result.carbs * portionSize),
+        fat: Math.round(result.fat * portionSize),
+        iron: Math.round(result.iron * portionSize * 10) / 10,
+        vitA: Math.round(result.vitA * portionSize),
+        zinc: Math.round(result.zinc * portionSize * 10) / 10,
+        portionSize,
         date: new Date().toISOString(),
       });
       setSaved(true);
-      Alert.alert('✅ Meal Logged!', `${result.name} has been saved to your food diary.`);
+      Alert.alert('✅ Meal Logged!', `${result.name} (${portionSize}x serving) has been saved to your food diary.`);
     } catch (e) {
       Alert.alert('Error', 'Failed to save meal. Try again.');
     }
@@ -145,8 +148,21 @@ export default function ScanScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>Macronutrients</Text>
+          <View style={styles.portionControl}>
+            <Text style={styles.sectionLabel}>Portion Size</Text>
+            <View style={styles.portionRow}>
+              <TouchableOpacity style={styles.portionBtn} onPress={() => setPortionSize(Math.max(0.25, portionSize - 0.25))}>
+                <Text style={styles.portionBtnText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.portionValue}>{portionSize}x serving</Text>
+              <TouchableOpacity style={styles.portionBtn} onPress={() => setPortionSize(Math.min(3, portionSize + 0.25))}>
+                <Text style={styles.portionBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.macroRow}>
-            {[['Calories', result.calories, 'kcal', '#FF7043'], ['Protein', result.protein, 'g', '#42A5F5'], ['Carbs', result.carbs, 'g', '#FFCA28'], ['Fat', result.fat, 'g', '#AB47BC']].map(([label, val, unit, color], i) => (
+            {[['Calories', Math.round(result.calories * portionSize), 'kcal', '#FF7043'], ['Protein', Math.round(result.protein * portionSize), 'g', '#42A5F5'], ['Carbs', Math.round(result.carbs * portionSize), 'g', '#FFCA28'], ['Fat', Math.round(result.fat * portionSize), 'g', '#AB47BC']].map(([label, val, unit, color], i) => (
               <View key={i} style={styles.macroBox}>
                 <Text style={[styles.macroNum, { color }]}>{val}</Text>
                 <Text style={styles.macroUnit}>{unit}</Text>
@@ -205,6 +221,11 @@ const styles = StyleSheet.create({
   confidenceBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   confidenceText: { fontSize: 12, fontWeight: 'bold' },
   sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#999', marginBottom: 10, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  portionControl: { marginBottom: 16 },
+  portionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  portionBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#4CAF50', alignItems: 'center', justifyContent: 'center' },
+  portionBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  portionValue: { fontSize: 16, fontWeight: '600', minWidth: 100, textAlign: 'center' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   macroBox: { alignItems: 'center', flex: 1, backgroundColor: '#F9F9F9', borderRadius: 12, padding: 10 },
   macroNum: { fontSize: 20, fontWeight: 'bold' },
