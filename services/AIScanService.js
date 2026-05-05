@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system';
+
 const filipinoDishes = [
   { name: 'Sinigang na Baboy', icon: '🍲', calories: 320, protein: 22, carbs: 18, fat: 14, iron: 3.2, vitA: 120, zinc: 2.1 },
   { name: 'Adobong Manok', icon: '🍗', calories: 510, protein: 35, carbs: 12, fat: 28, iron: 2.8, vitA: 80, zinc: 3.4 },
@@ -16,13 +18,8 @@ const filipinoDishes = [
   { name: 'Mechado', icon: '🥘', calories: 420, protein: 30, carbs: 16, fat: 24, iron: 3.2, vitA: 110, zinc: 3.6 },
 ];
 
-const iconMap = {
-  soup: '🍲', chicken: '🍗', pork: '🥩', fish: '🐟', noodles: '🍜',
-  rice: '🍚', vegetables: '🥦', egg: '🍳', default: '🍽️',
-};
-
 const getIcon = (name) => {
-  const lower = name.toLowerCase();
+  const lower = (name || '').toLowerCase();
   if (lower.includes('sinigang') || lower.includes('nilaga') || lower.includes('kare')) return '🍲';
   if (lower.includes('manok') || lower.includes('chicken')) return '🍗';
   if (lower.includes('baboy') || lower.includes('lechon') || lower.includes('sisig')) return '🥩';
@@ -34,18 +31,15 @@ const getIcon = (name) => {
   return '🍽️';
 };
 
+const getFallback = () => {
+  const dish = filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)];
+  return { ...dish, confidence: 72, detectedLabels: ['food', 'filipino dish', 'meal'] };
+};
+
 const analyzeFoodWithClaude = async (imageUri) => {
-  const response = await fetch(imageUri);
-  const blob = await response.blob();
-
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+  const base64 = await FileSystem.readAsStringAsync(imageUri, {
+    encoding: FileSystem.EncodingType.Base64,
   });
-
-  const mediaType = blob.type || 'image/jpeg';
 
   const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -56,7 +50,7 @@ const analyzeFoodWithClaude = async (imageUri) => {
     },
     body: JSON.stringify({
       model: 'claude-opus-4-5',
-      max_tokens: 1024,
+      max_tokens: 512,
       messages: [
         {
           role: 'user',
@@ -65,25 +59,13 @@ const analyzeFoodWithClaude = async (imageUri) => {
               type: 'image',
               source: {
                 type: 'base64',
-                media_type: mediaType,
+                media_type: 'image/jpeg',
                 data: base64,
               },
             },
             {
               type: 'text',
-              text: `Analyze this food image. Identify the dish and provide nutritional estimates. You must respond with ONLY a valid JSON object, no extra text, no markdown, no explanation. Use this exact format:
-{
-  "name": "dish name in English or Filipino",
-  "confidence": 85,
-  "calories": 350,
-  "protein": 25,
-  "carbs": 30,
-  "fat": 15,
-  "iron": 2.5,
-  "vitA": 120,
-  "zinc": 2.1
-}
-Provide realistic nutritional values per single serving. If you cannot identify food, use your best estimate.`,
+              text: 'Analyze this food image. Identify the dish and provide nutritional estimates per single serving. Respond ONLY with a valid JSON object, no markdown, no extra text:\n{"name":"dish name","confidence":85,"calories":350,"protein":25,"carbs":30,"fat":15,"iron":2.5,"vitA":120,"zinc":2.1}',
             },
           ],
         },
@@ -92,17 +74,16 @@ Provide realistic nutritional values per single serving. If you cannot identify 
   });
 
   if (!apiResponse.ok) {
-    throw new Error(`API error: ${apiResponse.status}`);
+    throw new Error(`API ${apiResponse.status}`);
   }
 
   const data = await apiResponse.json();
-  const text = data.content[0].text.trim();
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(cleaned);
+  const text = data.content[0].text.trim().replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(text);
 
   return {
     name: parsed.name || 'Unknown Dish',
-    icon: getIcon(parsed.name || ''),
+    icon: getIcon(parsed.name),
     calories: Math.round(Number(parsed.calories) || 300),
     protein: Math.round(Number(parsed.protein) || 20),
     carbs: Math.round(Number(parsed.carbs) || 30),
@@ -116,17 +97,11 @@ Provide realistic nutritional values per single serving. If you cannot identify 
 };
 
 export const analyzeFoodImage = async (imageUri) => {
-  if (!imageUri) {
-    const dish = filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)];
-    return { ...dish, confidence: 75, detectedLabels: ['food', 'filipino dish', 'meal'] };
-  }
-
+  if (!imageUri) return getFallback();
   try {
-    const result = await analyzeFoodWithClaude(imageUri);
-    return result;
+    return await analyzeFoodWithClaude(imageUri);
   } catch (error) {
-    console.log('Claude API failed, using fallback:', error.message);
-    const dish = filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)];
-    return { ...dish, confidence: 72, detectedLabels: ['food', 'filipino dish', 'meal'] };
+    console.warn('AI scan fallback:', error.message);
+    return getFallback();
   }
 };

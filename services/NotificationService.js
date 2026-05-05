@@ -18,9 +18,7 @@ export const setupNotifications = async () => {
     finalStatus = status;
   }
 
-  if (finalStatus !== 'granted') {
-    return false;
-  }
+  if (finalStatus !== 'granted') return false;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -67,11 +65,7 @@ export const scheduleWaterReminder = async () => {
 
 export const sendLocalNotification = async (title, body) => {
   await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      sound: true,
-    },
+    content: { title, body, sound: true },
     trigger: null,
   });
 };

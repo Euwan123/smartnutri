@@ -45,7 +45,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
         const isFocused = state.index === index;
         if (tab.isCenter) {
           return (
-            <TouchableOpacity key={index} style={styles.centerBtn} onPress={() => navigation.navigate('ScanTab')} activeOpacity={0.8}>
+            <TouchableOpacity
+              key={index}
+              style={styles.centerBtn}
+              onPress={() => navigation.navigate('ScanTab')}
+              activeOpacity={0.8}
+            >
               <View style={[styles.centerBtnInner, { backgroundColor: theme.primary }]}>
                 <Ionicons name="camera" size={28} color="#fff" />
               </View>
@@ -53,9 +58,20 @@ function CustomTabBar({ state, descriptors, navigation }) {
           );
         }
         return (
-          <TouchableOpacity key={index} style={styles.tabItem} onPress={() => navigation.navigate(route.name)} activeOpacity={0.7}>
-            <Ionicons name={isFocused ? tab.icon : tab.iconOutline} size={24} color={isFocused ? theme.primary : '#bbb'} />
-            <Text style={[styles.tabLabel, { color: isFocused ? theme.primary : '#bbb' }]}>{tab.name === 'ScanTab' ? 'Scan' : tab.name}</Text>
+          <TouchableOpacity
+            key={index}
+            style={styles.tabItem}
+            onPress={() => navigation.navigate(route.name)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isFocused ? tab.icon : tab.iconOutline}
+              size={24}
+              color={isFocused ? theme.primary : '#bbb'}
+            />
+            <Text style={[styles.tabLabel, { color: isFocused ? theme.primary : '#bbb' }]}>
+              {tab.name === 'ScanTab' ? 'Scan' : tab.name}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -84,17 +100,22 @@ function AppNavigator() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
     return unsub;
   }, []);
 
-  if (loading) return (
-    <View style={[styles.splash, { backgroundColor: theme.primary }]}>
-      <Ionicons name="leaf" size={60} color="#fff" />
-      <Text style={styles.splashTitle}>Smart Nutri Scanner</Text>
-      <Text style={styles.splashSub}>AI-Powered Filipino Meal Analyzer</Text>
-    </View>
-  );
+  if (loading) {
+    return (
+      <View style={[styles.splash, { backgroundColor: theme.primary }]}>
+        <Ionicons name="leaf" size={60} color="#fff" />
+        <Text style={styles.splashTitle}>Smart Nutri Scanner</Text>
+        <Text style={styles.splashSub}>AI-Powered Filipino Meal Analyzer</Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -133,12 +154,60 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: { flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0, elevation: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 20 },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 },
-  tabLabel: { fontSize: 10, fontWeight: '600', marginTop: 3 },
-  centerBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -24 },
-  centerBtnInner: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, borderWidth: 3, borderColor: '#fff' },
-  splash: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  splashTitle: { color: '#fff', fontSize: 26, fontWeight: 'bold' },
-  splashSub: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
+  tabBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 10,
+    borderTopWidth: 0,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  centerBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -24,
+  },
+  centerBtnInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  splash: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  splashTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: 'bold',
+  },
+  splashSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+  },
 });

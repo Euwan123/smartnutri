@@ -1,4 +1,7 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert, ActivityIndicator, Image } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  Animated, Alert, ActivityIndicator, Image,
+} from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc } from 'firebase/firestore';
@@ -17,32 +20,43 @@ export default function ScanScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (stage === 'scanning') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.15, duration: 600, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        ])
-      ).start();
+    if (stage !== 'scanning') return;
 
-      const scanImage = async () => {
-        try {
-          const res = await analyzeFoodImage(image);
-          setResult(res);
-          setStage('result');
-        } catch (error) {
-          setStage('result');
-        }
-      };
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
 
-      scanImage();
-    }
-  }, [stage, image]);
+    const doScan = async () => {
+      try {
+        const res = await analyzeFoodImage(image);
+        setResult(res);
+      } catch (_) {
+        setResult(null);
+      } finally {
+        pulse.stop();
+        setStage('result');
+      }
+    };
+
+    doScan();
+    return () => pulse.stop();
+  }, [stage]);
 
   const openCamera = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Permission needed', 'Camera access is required to scan meals.');
-    const picked = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) {
+      Alert.alert('Permission needed', 'Camera access is required to scan meals.');
+      return;
+    }
+    const picked = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
     if (!picked.canceled) {
       setImage(picked.assets[0].uri);
       setStage('scanning');
@@ -50,9 +64,16 @@ export default function ScanScreen() {
   };
 
   const openGallery = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Permission needed', 'Gallery access is required.');
-    const picked = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
+      Alert.alert('Permission needed', 'Gallery access is required.');
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
     if (!picked.canceled) {
       setImage(picked.assets[0].uri);
       setStage('scanning');
@@ -78,24 +99,36 @@ export default function ScanScreen() {
         date: new Date().toISOString(),
       });
       setSaved(true);
-      Alert.alert('Meal Logged!', `${result.name} (${portionSize}x serving) has been saved to your food diary.`);
-    } catch (e) {
+      Alert.alert('Meal Logged!', `${result.name} (${portionSize}x serving) saved to your diary.`);
+    } catch (_) {
       Alert.alert('Error', 'Failed to save meal. Try again.');
     }
     setSaving(false);
   };
 
-  const reset = () => { setStage('idle'); setResult(null); setImage(null); setSaved(false); setPortionSize(1); };
+  const reset = () => {
+    setStage('idle');
+    setResult(null);
+    setImage(null);
+    setSaved(false);
+    setPortionSize(1);
+  };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.light }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.light }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       {stage === 'idle' && (
         <View style={styles.idleBox}>
           <View style={[styles.cameraFrame, { borderColor: theme.primary, backgroundColor: theme.light }]}>
             <Text style={styles.cameraIcon}>📷</Text>
           </View>
           <Text style={styles.title}>Scan Your Meal</Text>
-          <Text style={styles.sub}>Take or upload a photo of any Filipino dish to instantly analyze its nutrition content</Text>
+          <Text style={styles.sub}>
+            Take or upload a photo of any Filipino dish to instantly analyze its nutrition
+          </Text>
           <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={openCamera}>
             <Text style={styles.btnText}>📸  Take Photo</Text>
           </TouchableOpacity>
@@ -118,7 +151,7 @@ export default function ScanScreen() {
             <Text style={styles.scanIcon}>🔍</Text>
           </Animated.View>
           <Text style={styles.scanningText}>Analyzing your meal...</Text>
-          <Text style={styles.scanningSubText}>Our AI is identifying the dish and calculating nutritional values</Text>
+          <Text style={styles.scanningSubText}>AI is identifying the dish and calculating nutrition</Text>
         </View>
       )}
 
@@ -128,18 +161,26 @@ export default function ScanScreen() {
           <View style={styles.resultHeader}>
             <Text style={styles.resultTitle}>{result.icon} {result.name}</Text>
             <View style={[styles.confidenceBadge, { backgroundColor: theme.light }]}>
-              <Text style={[styles.confidenceText, { color: theme.primary }]}>{Math.floor(result.confidence || 88)}% match</Text>
+              <Text style={[styles.confidenceText, { color: theme.primary }]}>
+                {Math.floor(result.confidence || 88)}% match
+              </Text>
             </View>
           </View>
 
           <View style={styles.portionControl}>
             <Text style={styles.sectionLabel}>Portion Size</Text>
             <View style={styles.portionRow}>
-              <TouchableOpacity style={[styles.portionBtn, { backgroundColor: theme.primary }]} onPress={() => setPortionSize(Math.max(0.25, portionSize - 0.25))}>
+              <TouchableOpacity
+                style={[styles.portionBtn, { backgroundColor: theme.primary }]}
+                onPress={() => setPortionSize(Math.max(0.25, portionSize - 0.25))}
+              >
                 <Text style={styles.portionBtnText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.portionValue}>{portionSize}x serving</Text>
-              <TouchableOpacity style={[styles.portionBtn, { backgroundColor: theme.primary }]} onPress={() => setPortionSize(Math.min(3, portionSize + 0.25))}>
+              <TouchableOpacity
+                style={[styles.portionBtn, { backgroundColor: theme.primary }]}
+                onPress={() => setPortionSize(Math.min(3, portionSize + 0.25))}
+              >
                 <Text style={styles.portionBtnText}>+</Text>
               </TouchableOpacity>
             </View>
@@ -147,8 +188,13 @@ export default function ScanScreen() {
 
           <Text style={styles.sectionLabel}>Macronutrients</Text>
           <View style={styles.macroRow}>
-            {[['Calories', Math.round(result.calories * portionSize), 'kcal', '#FF7043'], ['Protein', Math.round(result.protein * portionSize), 'g', '#42A5F5'], ['Carbs', Math.round(result.carbs * portionSize), 'g', '#FFCA28'], ['Fat', Math.round(result.fat * portionSize), 'g', '#AB47BC']].map(([label, val, unit, color], i) => (
-              <View key={i} style={styles.macroBox}>
+            {[
+              ['Calories', Math.round(result.calories * portionSize), 'kcal', '#FF7043'],
+              ['Protein', Math.round(result.protein * portionSize), 'g', '#42A5F5'],
+              ['Carbs', Math.round(result.carbs * portionSize), 'g', '#FFCA28'],
+              ['Fat', Math.round(result.fat * portionSize), 'g', '#AB47BC'],
+            ].map(([label, val, unit, color]) => (
+              <View key={label} style={styles.macroBox}>
                 <Text style={[styles.macroNum, { color }]}>{val}</Text>
                 <Text style={styles.macroUnit}>{unit}</Text>
                 <Text style={styles.macroLabel}>{label}</Text>
@@ -157,21 +203,47 @@ export default function ScanScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>Micronutrients</Text>
-          {[['🩸 Iron', `${result.iron}mg`, result.iron >= 3], ['👁️ Vitamin A', `${result.vitA}mcg`, result.vitA >= 300], ['⚡ Zinc', `${result.zinc}mg`, result.zinc >= 3]].map(([label, val, ok], i) => (
-            <View key={i} style={styles.microRow}>
+          {[
+            ['🩸 Iron', `${result.iron}mg`, result.iron >= 3],
+            ['👁️ Vitamin A', `${result.vitA}mcg`, result.vitA >= 300],
+            ['⚡ Zinc', `${result.zinc}mg`, result.zinc >= 3],
+          ].map(([label, val, ok]) => (
+            <View key={label} style={styles.microRow}>
               <Text style={styles.microLabel}>{label}</Text>
-              <Text style={[styles.microVal, { color: ok ? '#2E7D32' : '#E53935' }]}>{val} {ok ? '✅' : '⚠️'}</Text>
+              <Text style={[styles.microVal, { color: ok ? '#2E7D32' : '#E53935' }]}>
+                {val} {ok ? '✅' : '⚠️'}
+              </Text>
             </View>
           ))}
 
           <View style={styles.actionRow}>
-            <TouchableOpacity style={[styles.logBtn, { backgroundColor: saved ? '#388E3C' : theme.primary }]} onPress={logMeal} disabled={saving || saved}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.logBtnText}>{saved ? '✅ Logged!' : '📥 Log This Meal'}</Text>}
+            <TouchableOpacity
+              style={[styles.logBtn, { backgroundColor: saved ? '#388E3C' : theme.primary }]}
+              onPress={logMeal}
+              disabled={saving || saved}
+            >
+              {saving
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.logBtnText}>{saved ? '✅ Logged!' : '📥 Log This Meal'}</Text>
+              }
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.retryBtn, { borderColor: theme.primary }]} onPress={reset}>
+            <TouchableOpacity
+              style={[styles.retryBtn, { borderColor: theme.primary }]}
+              onPress={reset}
+            >
               <Text style={[styles.retryBtnText, { color: theme.primary }]}>🔄 Scan Again</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {stage === 'result' && !result && (
+        <View style={styles.scanningBox}>
+          <Text style={styles.scanIcon}>😕</Text>
+          <Text style={styles.scanningText}>Could not identify the dish</Text>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary, marginTop: 20 }]} onPress={reset}>
+            <Text style={styles.btnText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       )}
     </ScrollView>
@@ -182,7 +254,16 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20, flexGrow: 1 },
   idleBox: { alignItems: 'center' },
-  cameraFrame: { width: 180, height: 180, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderStyle: 'dashed', marginBottom: 20 },
+  cameraFrame: {
+    width: 180,
+    height: 180,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderStyle: 'dashed',
+    marginBottom: 20,
+  },
   cameraIcon: { fontSize: 70 },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
   sub: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 22 },
@@ -195,28 +276,61 @@ const styles = StyleSheet.create({
   tip: { color: '#666', fontSize: 13, marginBottom: 4 },
   scanningBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
   previewImage: { width: '100%', height: 200, borderRadius: 16, marginBottom: 24 },
-  pulseCircle: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 3 },
+  pulseCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 3,
+  },
   scanIcon: { fontSize: 60 },
   scanningText: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
   scanningSubText: { fontSize: 13, color: '#888', textAlign: 'center' },
   resultBox: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 4 },
   resultImage: { width: '100%', height: 180, borderRadius: 16, marginBottom: 16 },
-  resultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  resultHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   resultTitle: { fontSize: 18, fontWeight: 'bold', flex: 1 },
   confidenceBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   confidenceText: { fontSize: 12, fontWeight: 'bold' },
-  sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#999', marginBottom: 10, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#999',
+    marginBottom: 10,
+    marginTop: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   portionControl: { marginBottom: 16 },
   portionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
   portionBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   portionBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
   portionValue: { fontSize: 16, fontWeight: '600', minWidth: 100, textAlign: 'center' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  macroBox: { alignItems: 'center', flex: 1, backgroundColor: '#F9F9F9', borderRadius: 12, padding: 10 },
+  macroBox: {
+    alignItems: 'center',
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 10,
+  },
   macroNum: { fontSize: 20, fontWeight: 'bold' },
   macroUnit: { fontSize: 10, color: '#999' },
   macroLabel: { fontSize: 11, color: '#666', marginTop: 2 },
-  microRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  microRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
   microLabel: { fontSize: 14, color: '#555' },
   microVal: { fontSize: 14, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
