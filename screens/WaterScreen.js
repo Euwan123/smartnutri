@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function WaterScreen() {
   const { theme } = useTheme();
   const [waterIntake, setWaterIntake] = useState(0);
-  const [goal, setGoal] = useState(8);
+  const [goal] = useState(8);
   const [todayLogs, setTodayLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,16 +22,29 @@ export default function WaterScreen() {
     setLoading(true);
     try {
       const user = auth.currentUser;
-      const q = query(
-        collection(db, 'users', user.uid, 'water'),
-        where('date', '==', today),
-        orderBy('timestamp', 'desc')
-      );
-      const snapshot = await getDocs(q);
-      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let logs = [];
+
+      try {
+        const q = query(
+          collection(db, 'users', user.uid, 'water'),
+          where('date', '==', today),
+          orderBy('timestamp', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        logs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (indexError) {
+        const q = query(
+          collection(db, 'users', user.uid, 'water'),
+          where('date', '==', today)
+        );
+        const snapshot = await getDocs(q);
+        logs = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      }
+
       setTodayLogs(logs);
-      const total = logs.reduce((sum, log) => sum + log.amount, 0);
-      setWaterIntake(total);
+      setWaterIntake(logs.reduce((sum, log) => sum + log.amount, 0));
     } catch (error) {
       console.log('Error loading water data:', error);
     }
@@ -41,14 +54,15 @@ export default function WaterScreen() {
   const addWater = async (amount) => {
     try {
       const user = auth.currentUser;
-      await addDoc(collection(db, 'users', user.uid, 'water'), {
+      const entry = {
         amount,
         timestamp: new Date().toISOString(),
         date: today,
-      });
+      };
+      await addDoc(collection(db, 'users', user.uid, 'water'), entry);
       setWaterIntake(prev => prev + amount);
-      setTodayLogs(prev => [{ amount, timestamp: new Date().toISOString() }, ...prev]);
-      Alert.alert('✅ Water Logged!', `Added ${amount} glass${amount > 1 ? 'es' : ''} of water.`);
+      setTodayLogs(prev => [entry, ...prev]);
+      Alert.alert('Water Logged!', `Added ${amount} glass${amount > 1 ? 'es' : ''} of water.`);
     } catch (error) {
       Alert.alert('Error', 'Failed to log water intake');
     }
@@ -70,11 +84,9 @@ export default function WaterScreen() {
           <Text style={styles.progressUnit}>glasses</Text>
           <Text style={styles.progressGoal}>of {goal}</Text>
         </View>
-
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
         </View>
-
         <Text style={styles.progressText}>
           {remaining > 0 ? `${remaining} more glass${remaining > 1 ? 'es' : ''} to go!` : '🎉 Goal achieved!'}
         </Text>
@@ -131,7 +143,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: 24 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
   sub: { fontSize: 14, color: '#666' },
-  progressCard: { backgroundColor: '#fff', borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 24, elevation: 4 },
+  progressCard: { borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 24, elevation: 4 },
   progressCircle: { alignItems: 'center', marginBottom: 20 },
   progressNum: { fontSize: 48, fontWeight: 'bold' },
   progressUnit: { fontSize: 16, color: '#666', marginTop: -8 },
@@ -150,6 +162,6 @@ const styles = StyleSheet.create({
   logText: { flex: 1, fontSize: 16, marginLeft: 12 },
   logTime: { fontSize: 12, color: '#666' },
   tips: { marginBottom: 40 },
-  tipCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+  tipCard: { borderRadius: 12, padding: 16 },
   tipText: { fontSize: 14, color: '#555', marginBottom: 8, lineHeight: 20 },
 });

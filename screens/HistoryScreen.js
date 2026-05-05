@@ -22,8 +22,18 @@ export default function HistoryScreen() {
     setLoading(true);
     try {
       const user = auth.currentUser;
-      const snap = await getDocs(query(collection(db, 'users', user.uid, 'meals'), orderBy('date', 'desc')));
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let data = [];
+
+      try {
+        const snap = await getDocs(query(collection(db, 'users', user.uid, 'meals'), orderBy('date', 'desc')));
+        data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (indexError) {
+        const snap = await getDocs(collection(db, 'users', user.uid, 'meals'));
+        data = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+
       setMeals(data);
 
       const groups = {};
@@ -46,15 +56,21 @@ export default function HistoryScreen() {
       }
       setWeekDays(days);
       setWeekStats(stats);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log('Error fetching meals:', e);
+    }
     setLoading(false);
   };
 
   useFocusEffect(useCallback(() => { fetchMeals(); }, []));
 
   const deleteMeal = async (id) => {
-    await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'meals', id));
-    fetchMeals();
+    try {
+      await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'meals', id));
+      fetchMeals();
+    } catch (e) {
+      console.log('Error deleting meal:', e);
+    }
   };
 
   const maxCal = Math.max(...weekStats, 1);
@@ -152,7 +168,11 @@ export default function HistoryScreen() {
           <View style={styles.statsCard}>
             <Text style={styles.cardTitle}>📈 All Time Stats</Text>
             <View style={styles.statsRow}>
-              {[[meals.length, 'Total Meals'], [new Set(meals.map(m => new Date(m.date).toDateString())).size, 'Days Logged'], [Math.round(meals.reduce((a, m) => a + (m.calories || 0), 0) / Math.max(meals.length, 1)), 'Avg Kcal/Meal']].map(([val, label], i) => (
+              {[
+                [meals.length, 'Total Meals'],
+                [new Set(meals.map(m => new Date(m.date).toDateString())).size, 'Days Logged'],
+                [Math.round(meals.reduce((a, m) => a + (m.calories || 0), 0) / Math.max(meals.length, 1)), 'Avg Kcal/Meal'],
+              ].map(([val, label], i) => (
                 <View key={i} style={styles.statBox}>
                   <Text style={styles.statNum}>{val}</Text>
                   <Text style={styles.statLabel}>{label}</Text>

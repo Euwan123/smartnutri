@@ -20,7 +20,12 @@ function NutrientRing({ value, max, color, label, unit }) {
   return (
     <View style={ringStyles.container}>
       <View style={[ringStyles.ring, { borderColor: '#eee' }]}>
-        <View style={[ringStyles.fill, { borderColor: color, borderTopColor: pct > 0.25 ? color : 'transparent', borderRightColor: pct > 0.5 ? color : 'transparent', borderBottomColor: pct > 0.75 ? color : 'transparent' }]} />
+        <View style={[ringStyles.fill, {
+          borderColor: color,
+          borderTopColor: pct > 0.25 ? color : 'transparent',
+          borderRightColor: pct > 0.5 ? color : 'transparent',
+          borderBottomColor: pct > 0.75 ? color : 'transparent',
+        }]} />
         <View style={ringStyles.center}>
           <Text style={[ringStyles.num, { color }]}>{value}</Text>
           <Text style={ringStyles.unit}>{unit}</Text>
@@ -59,6 +64,17 @@ export default function HomeScreen({ navigation }) {
     return 'Good Evening';
   })();
 
+  const calcStreak = (allMeals) => {
+    const days = new Set(allMeals.map(m => new Date(m.date).toDateString()));
+    let s = 0;
+    const check = new Date();
+    while (days.has(check.toDateString())) {
+      s++;
+      check.setDate(check.getDate() - 1);
+    }
+    return s;
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -69,11 +85,27 @@ export default function HomeScreen({ navigation }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const mealsRef = collection(db, 'users', user.uid, 'meals');
-      const todayQ = query(mealsRef, where('date', '>=', today.toISOString()), orderBy('date', 'desc'));
-      const recentQ = query(mealsRef, orderBy('date', 'desc'), limit(4));
-      const [todaySnap, recentSnap] = await Promise.all([getDocs(todayQ), getDocs(recentQ)]);
 
-      const todayMeals = todaySnap.docs.map(d => d.data());
+      let todayMeals = [];
+      let recentMeals = [];
+      let allMeals = [];
+
+      try {
+        const [todaySnap, recentSnap, allSnap] = await Promise.all([
+          getDocs(query(mealsRef, where('date', '>=', today.toISOString()), orderBy('date', 'desc'))),
+          getDocs(query(mealsRef, orderBy('date', 'desc'), limit(4))),
+          getDocs(query(mealsRef, orderBy('date', 'desc'))),
+        ]);
+        todayMeals = todaySnap.docs.map(d => d.data());
+        recentMeals = recentSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allMeals = allSnap.docs.map(d => d.data());
+      } catch (indexError) {
+        const allSnap = await getDocs(mealsRef);
+        allMeals = allSnap.docs.map(d => d.data()).sort((a, b) => new Date(b.date) - new Date(a.date));
+        todayMeals = allMeals.filter(m => new Date(m.date) >= today);
+        recentMeals = allSnap.docs.slice(0, 4).map(d => ({ id: d.id, ...d.data() }));
+      }
+
       const totals = todayMeals.reduce((acc, m) => ({
         calories: acc.calories + (m.calories || 0),
         protein: acc.protein + (m.protein || 0),
@@ -81,27 +113,37 @@ export default function HomeScreen({ navigation }) {
         fat: acc.fat + (m.fat || 0),
       }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-      const childSnap = await getDocs(collection(db, 'users', user.uid, 'children'));
-      const alerts = childSnap.docs.filter(d => d.data().iron < 6 || d.data().vitA < 200).map(d => d.data().name);
-
-      const allSnap = await getDocs(query(mealsRef, orderBy('date', 'desc')));
-      const days = new Set(allSnap.docs.map(d => new Date(d.data().date).toDateString()));
-      let s = 0;
-      const check = new Date();
-      while (days.has(check.toDateString())) { s++; check.setDate(check.getDate() - 1); }
+      let alerts = [];
+      try {
+        const childSnap = await getDocs(collection(db, 'users', user.uid, 'children'));
+        alerts = childSnap.docs.filter(d => d.data().iron < 6 || d.data().vitA < 200).map(d => d.data().name);
+      } catch (e) {
+        console.log('Children fetch error:', e);
+      }
 
       const missing = [];
       if (totals.protein < 40) missing.push('protein');
       if (totals.calories < 800) missing.push('calories');
       if (totals.fat < 20) missing.push('healthy fats');
-      setAiTip(missing.length > 0 ? `You're low on ${missing.join(' and ')} today. Try adding ${totals.protein < 40 ? 'Tinolang Manok or Bangus' : 'Pinakbet or Sinigang'} to your next meal.` : 'Great job! Your nutrition looks balanced today. Keep it up! 💪');
+      setAiTip(
+        missing.length > 0
+          ? `You're low on ${missing.join(' and ')} today. Try adding ${totals.protein < 40 ? 'Tinolang Manok or Bangus' : 'Pinakbet or Sinigang'} to your next meal.`
+          : 'Great job! Your nutrition looks balanced today. Keep it up! 💪'
+      );
 
-      setStats({ calories: Math.round(totals.calories), protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat) });
-      setMeals(recentSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setStats({
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein),
+        carbs: Math.round(totals.carbs),
+        fat: Math.round(totals.fat),
+      });
+      setMeals(recentMeals);
       setChildAlerts(alerts);
-      setStreak(s);
+      setStreak(calcStreak(allMeals));
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log('HomeScreen fetch error:', e);
+    }
     setLoading(false);
   };
 
@@ -212,7 +254,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.emptyMeals}>
                 <Text style={styles.emptyIcon}>🍽️</Text>
                 <Text style={styles.emptyText}>No meals logged yet</Text>
-                <TouchableOpacity style={[styles.scanNowBtn, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('Scan Meal')}>
+                <TouchableOpacity style={[styles.scanNowBtn, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('ScanTab')}>
                   <Text style={styles.scanNowText}>📷 Scan Your First Meal</Text>
                 </TouchableOpacity>
               </View>
@@ -250,7 +292,7 @@ const styles = StyleSheet.create({
   bannerSub: { color: '#fff', fontSize: 13 },
   streakBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 10, alignItems: 'center', minWidth: 54 },
   streakNum: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  card: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10 },
+  card: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   cardTitle: { fontSize: 15, fontWeight: 'bold' },
   cardSub: { fontSize: 12, color: '#999' },

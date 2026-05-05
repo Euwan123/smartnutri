@@ -27,7 +27,7 @@ export const setupNotifications = async () => {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      lightColor: '#1B5E20',
     });
   }
 
@@ -35,16 +35,17 @@ export const setupNotifications = async () => {
 };
 
 export const scheduleMealReminder = async (hour = 12, minute = 0) => {
+  await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Meal Time! 🍽️",
+      title: 'Meal Time! 🍽️',
       body: "Don't forget to log your meal and track your nutrition.",
-      sound: 'default',
+      sound: true,
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute,
-      repeats: true,
     },
   });
 };
@@ -52,14 +53,14 @@ export const scheduleMealReminder = async (hour = 12, minute = 0) => {
 export const scheduleWaterReminder = async () => {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Stay Hydrated! 💧",
-      body: "Remember to drink water throughout the day.",
-      sound: 'default',
+      title: 'Stay Hydrated! 💧',
+      body: 'Remember to drink water throughout the day.',
+      sound: true,
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: 10,
       minute: 0,
-      repeats: true,
     },
   });
 };
@@ -69,7 +70,7 @@ export const sendLocalNotification = async (title, body) => {
     content: {
       title,
       body,
-      sound: 'default',
+      sound: true,
     },
     trigger: null,
   });
