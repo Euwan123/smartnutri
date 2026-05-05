@@ -18,18 +18,17 @@ export default function RecipeDetailScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.light }]}>
       <View style={styles.header}>
         <Text style={styles.recipeEmoji}>{recipe.image}</Text>
         <Text style={[styles.recipeName, { color: theme.text }]}>{recipe.name}</Text>
-
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Prep Time</Text>
+            <Text style={[styles.metaLabel, { color: theme.subtext }]}>Prep Time</Text>
             <Text style={[styles.metaValue, { color: theme.text }]}>{recipe.prepTime}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Difficulty</Text>
+            <Text style={[styles.metaLabel, { color: theme.subtext }]}>Difficulty</Text>
             <Text style={[styles.metaValue, {
               color: recipe.difficulty === 'Easy' ? '#4CAF50' : recipe.difficulty === 'Medium' ? '#FF9800' : '#F44336'
             }]}>
@@ -51,7 +50,7 @@ export default function RecipeDetailScreen({ route, navigation }) {
             <View key={index} style={[styles.nutritionItem, { backgroundColor: item.color + '20' }]}>
               <Text style={[styles.nutritionValue, { color: item.color }]}>{item.value}</Text>
               <Text style={[styles.nutritionUnit, { color: item.color }]}>{item.unit}</Text>
-              <Text style={[styles.nutritionLabel, { color: theme.textSecondary }]}>{item.label}</Text>
+              <Text style={[styles.nutritionLabel, { color: theme.subtext }]}>{item.label}</Text>
             </View>
           ))}
         </View>
@@ -69,7 +68,7 @@ export default function RecipeDetailScreen({ route, navigation }) {
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Instructions</Text>
-        {recipe.instructions.split('. ').map((step, index) => (
+        {recipe.instructions.split('. ').filter(s => s.trim()).map((step, index) => (
           <View key={index} style={styles.instructionRow}>
             <Text style={[styles.stepNumber, { backgroundColor: theme.primary, color: '#fff' }]}>
               {index + 1}
@@ -82,17 +81,10 @@ export default function RecipeDetailScreen({ route, navigation }) {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: theme.primary }]}
-          onPress={addToMealPlan}
-        >
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.primary }]} onPress={addToMealPlan}>
           <Text style={styles.actionButtonText}>📅 Add to Meal Plan</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
-          onPress={() => Alert.alert('Success', 'Recipe saved to favorites!')}
-        >
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#4CAF50' }]} onPress={() => Alert.alert('Success', 'Recipe saved to favorites!')}>
           <Text style={styles.actionButtonText}>❤️ Save Recipe</Text>
         </TouchableOpacity>
       </View>
@@ -112,13 +104,7 @@ const styles = StyleSheet.create({
   section: { padding: 20 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
   nutritionGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  nutritionItem: {
-    width: '48%',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
+  nutritionItem: { width: '48%', alignItems: 'center', padding: 16, borderRadius: 12, marginBottom: 12 },
   nutritionValue: { fontSize: 24, fontWeight: 'bold' },
   nutritionUnit: { fontSize: 12, fontWeight: '600', marginTop: 2 },
   nutritionLabel: { fontSize: 12, marginTop: 4, textAlign: 'center' },
@@ -126,25 +112,9 @@ const styles = StyleSheet.create({
   bullet: { fontSize: 16, marginRight: 12, marginTop: 2 },
   ingredientText: { fontSize: 16, flex: 1, lineHeight: 24 },
   instructionRow: { flexDirection: 'row', marginBottom: 16 },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginRight: 12,
-    marginTop: 2,
-  },
+  stepNumber: { width: 28, height: 28, borderRadius: 14, textAlign: 'center', textAlignVertical: 'center', fontSize: 14, fontWeight: 'bold', marginRight: 12, marginTop: 2 },
   instructionText: { fontSize: 16, flex: 1, lineHeight: 24 },
   actions: { padding: 20, paddingBottom: 40 },
-  actionButton: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 3,
-  },
+  actionButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12, elevation: 3 },
   actionButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
@@ -6,9 +6,7 @@ import { auth, db } from '../firebase';
 import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function HistoryScreen() {
   const { theme } = useTheme();
@@ -72,7 +70,7 @@ export default function HistoryScreen() {
 
       <View style={styles.tabRow}>
         {['daily', 'weekly'].map(t => (
-          <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
+          <TouchableOpacity key={t} style={[styles.tab, tab === t && { backgroundColor: theme.primary }]} onPress={() => setTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t === 'daily' ? '📆 Daily' : '📊 Weekly'}</Text>
           </TouchableOpacity>
         ))}
@@ -92,7 +90,7 @@ export default function HistoryScreen() {
                     <View style={styles.barBg}>
                       <View style={[styles.barFill, { height: `${(weekStats[i] / maxCal) * 100}%`, backgroundColor: d.toDateString() === selectedDate ? theme.primary : theme.accent }]} />
                     </View>
-                    <Text style={[styles.barLabel, d.toDateString() === new Date().toDateString() && styles.barLabelToday]}>{DAYS[d.getDay()]}</Text>
+                    <Text style={[styles.barLabel, d.toDateString() === new Date().toDateString() && { color: theme.primary }]}>{DAYS[d.getDay()]}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -102,7 +100,7 @@ export default function HistoryScreen() {
           {tab === 'daily' && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datePicker}>
               {weekDays.map((d, i) => (
-                <TouchableOpacity key={i} style={[styles.dateChip, d.toDateString() === selectedDate && styles.dateChipActive]} onPress={() => setSelectedDate(d.toDateString())}>
+                <TouchableOpacity key={i} style={[styles.dateChip, d.toDateString() === selectedDate && { backgroundColor: theme.primary }]} onPress={() => setSelectedDate(d.toDateString())}>
                   <Text style={[styles.dateDay, d.toDateString() === selectedDate && styles.dateDayActive]}>{DAYS[d.getDay()]}</Text>
                   <Text style={[styles.dateNum, d.toDateString() === selectedDate && styles.dateNumActive]}>{d.getDate()}</Text>
                 </TouchableOpacity>
@@ -176,7 +174,6 @@ const styles = StyleSheet.create({
   headerSub: { color: '#fff', fontSize: 13, marginTop: 4 },
   tabRow: { flexDirection: 'row', margin: 14, marginBottom: 0, borderRadius: 14, padding: 4 },
   tab: { flex: 1, padding: 10, borderRadius: 12, alignItems: 'center' },
-  tabActive: { backgroundColor: '#1B5E20' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#666' },
   tabTextActive: { color: '#fff' },
   card: { backgroundColor: '#fff', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3 },
@@ -189,10 +186,8 @@ const styles = StyleSheet.create({
   barBg: { width: 28, height: 100, backgroundColor: '#F5F5F5', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
   barFill: { width: '100%', borderRadius: 8 },
   barLabel: { fontSize: 11, color: '#999', fontWeight: '600' },
-  barLabelToday: { color: '#1B5E20' },
   datePicker: { paddingHorizontal: 14, paddingVertical: 12 },
   dateChip: { width: 52, marginRight: 10, alignItems: 'center', padding: 10, borderRadius: 16, backgroundColor: '#fff', elevation: 2 },
-  dateChipActive: { backgroundColor: '#1B5E20' },
   dateDay: { fontSize: 11, color: '#999', fontWeight: '600' },
   dateDayActive: { color: '#fff' },
   dateNum: { fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 4 },

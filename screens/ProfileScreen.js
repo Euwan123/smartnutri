@@ -1,17 +1,19 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, ActivityIndicator, TextInput, Modal, Image, Dimensions } from 'react-native';
 import { useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { signOut, updateProfile } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db, storage } from '../firebase';
+import { useTheme, THEMES } from '../context/ThemeContext';
 import { setupNotifications, scheduleMealReminder, scheduleWaterReminder, cancelAllNotifications } from '../services/NotificationService';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { theme, setTheme } = useTheme();
+  const navigation = useNavigation();
   const [notifications, setNotifications] = useState(true);
   const [childAlerts, setChildAlerts] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
@@ -63,7 +65,7 @@ export default function ProfileScreen() {
       if (editForm.name) await updateProfile(user, { displayName: editForm.name });
       setEditModal(false);
       fetchProfile();
-      Alert.alert('✅ Profile Updated!');
+      Alert.alert('Profile Updated!');
     } catch (e) { Alert.alert('Error', 'Failed to update profile'); }
   };
 
@@ -181,33 +183,33 @@ export default function ProfileScreen() {
             <Text style={[styles.cardTitle, { color: theme.primary }]}>🔔 Notifications & Privacy</Text>
             {[
               { label: 'Meal Reminders', sub: 'Get reminded to log meals', val: notifications, set: async (v) => {
-              setNotifications(v);
-              if (v) {
-                const granted = await setupNotifications();
-                if (granted) {
-                  await scheduleMealReminder();
-                  Alert.alert('✅ Notifications Enabled', 'You will receive meal reminders at noon daily.');
+                setNotifications(v);
+                if (v) {
+                  const granted = await setupNotifications();
+                  if (granted) {
+                    await scheduleMealReminder();
+                    Alert.alert('Notifications Enabled', 'You will receive meal reminders at noon daily.');
+                  } else {
+                    Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+                    setNotifications(false);
+                  }
                 } else {
-                  Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
-                  setNotifications(false);
+                  await cancelAllNotifications();
                 }
-              } else {
-                await cancelAllNotifications();
-              }
-            } },
-            { label: 'Water Reminders', sub: 'Stay hydrated with daily reminders', val: childAlerts, set: async (v) => {
-              setChildAlerts(v);
-              if (v) {
-                const granted = await setupNotifications();
-                if (granted) {
-                  await scheduleWaterReminder();
-                  Alert.alert('✅ Water Reminders Enabled', 'You will receive hydration reminders at 10 AM daily.');
-                } else {
-                  Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
-                  setChildAlerts(false);
+              }},
+              { label: 'Water Reminders', sub: 'Stay hydrated with daily reminders', val: childAlerts, set: async (v) => {
+                setChildAlerts(v);
+                if (v) {
+                  const granted = await setupNotifications();
+                  if (granted) {
+                    await scheduleWaterReminder();
+                    Alert.alert('Water Reminders Enabled', 'You will receive hydration reminders at 10 AM daily.');
+                  } else {
+                    Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+                    setChildAlerts(false);
+                  }
                 }
-              }
-            } },
+              }},
               { label: 'Public Profile', sub: 'Others can see your community posts', val: isPublic, set: async (v) => { setIsPublic(v); await updateDoc(doc(db, 'users', user.uid), { isPublic: v }); } },
             ].map((item, i) => (
               <View key={i} style={styles.toggleRow}>

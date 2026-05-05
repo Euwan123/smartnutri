@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert, ActivityIndicator, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert, ActivityIndicator, Image } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc } from 'firebase/firestore';
@@ -6,20 +6,7 @@ import { auth, db } from '../firebase';
 import { analyzeFoodImage } from '../services/AIScanService';
 import { useTheme } from '../context/ThemeContext';
 
-const filipinoDishes = [
-  { name: 'Sinigang na Baboy', icon: '🍲', calories: 320, protein: 22, carbs: 18, fat: 14, iron: 3.2, vitA: 120, zinc: 2.1 },
-  { name: 'Adobong Manok', icon: '🍗', calories: 510, protein: 35, carbs: 12, fat: 28, iron: 2.8, vitA: 80, zinc: 3.4 },
-  { name: 'Tinolang Manok', icon: '🍜', calories: 280, protein: 28, carbs: 10, fat: 9, iron: 2.1, vitA: 310, zinc: 2.8 },
-  { name: 'Kare-Kare', icon: '🥜', calories: 480, protein: 30, carbs: 22, fat: 26, iron: 3.8, vitA: 95, zinc: 4.1 },
-  { name: 'Lechon Kawali', icon: '🥩', calories: 620, protein: 38, carbs: 8, fat: 48, iron: 2.4, vitA: 40, zinc: 5.2 },
-  { name: 'Pinakbet', icon: '🥦', calories: 180, protein: 8, carbs: 20, fat: 8, iron: 2.9, vitA: 420, zinc: 1.8 },
-  { name: 'Bistek Tagalog', icon: '🥩', calories: 390, protein: 32, carbs: 14, fat: 22, iron: 4.1, vitA: 60, zinc: 4.8 },
-  { name: 'Nilaga', icon: '🍖', calories: 310, protein: 26, carbs: 16, fat: 15, iron: 3.0, vitA: 180, zinc: 3.2 },
-  { name: 'Pork Sisig', icon: '🍳', calories: 520, protein: 34, carbs: 6, fat: 38, iron: 2.6, vitA: 35, zinc: 4.5 },
-  { name: 'Bangus Sardines', icon: '🐟', calories: 240, protein: 24, carbs: 4, fat: 14, iron: 1.8, vitA: 95, zinc: 1.9 },
-];
-
-export default function ScanScreen({ navigation }) {
+export default function ScanScreen() {
   const { theme } = useTheme();
   const [stage, setStage] = useState('idle');
   const [result, setResult] = useState(null);
@@ -40,12 +27,10 @@ export default function ScanScreen({ navigation }) {
 
       const scanImage = async () => {
         try {
-          const result = await analyzeFoodImage(image);
-          setResult(result);
+          const res = await analyzeFoodImage(image);
+          setResult(res);
           setStage('result');
         } catch (error) {
-          console.log('Scan failed:', error);
-          setResult(filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)]);
           setStage('result');
         }
       };
@@ -93,29 +78,29 @@ export default function ScanScreen({ navigation }) {
         date: new Date().toISOString(),
       });
       setSaved(true);
-      Alert.alert('✅ Meal Logged!', `${result.name} (${portionSize}x serving) has been saved to your food diary.`);
+      Alert.alert('Meal Logged!', `${result.name} (${portionSize}x serving) has been saved to your food diary.`);
     } catch (e) {
       Alert.alert('Error', 'Failed to save meal. Try again.');
     }
     setSaving(false);
   };
 
-  const reset = () => { setStage('idle'); setResult(null); setImage(null); setSaved(false); };
+  const reset = () => { setStage('idle'); setResult(null); setImage(null); setSaved(false); setPortionSize(1); };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.light }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {stage === 'idle' && (
         <View style={styles.idleBox}>
-          <View style={styles.cameraFrame}>
+          <View style={[styles.cameraFrame, { borderColor: theme.primary, backgroundColor: theme.light }]}>
             <Text style={styles.cameraIcon}>📷</Text>
           </View>
           <Text style={styles.title}>Scan Your Meal</Text>
           <Text style={styles.sub}>Take or upload a photo of any Filipino dish to instantly analyze its nutrition content</Text>
-          <TouchableOpacity style={styles.btn} onPress={openCamera}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]} onPress={openCamera}>
             <Text style={styles.btnText}>📸  Take Photo</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btnOutline} onPress={openGallery}>
-            <Text style={styles.btnOutlineText}>🖼️  Upload from Gallery</Text>
+          <TouchableOpacity style={[styles.btnOutline, { borderColor: theme.primary }]} onPress={openGallery}>
+            <Text style={[styles.btnOutlineText, { color: theme.primary }]}>🖼️  Upload from Gallery</Text>
           </TouchableOpacity>
           <View style={styles.tipsBox}>
             <Text style={styles.tipsTitle}>Tips for best results:</Text>
@@ -129,7 +114,7 @@ export default function ScanScreen({ navigation }) {
       {stage === 'scanning' && (
         <View style={styles.scanningBox}>
           {image && <Image source={{ uri: image }} style={styles.previewImage} />}
-          <Animated.View style={[styles.pulseCircle, { transform: [{ scale: pulseAnim }] }]}>
+          <Animated.View style={[styles.pulseCircle, { transform: [{ scale: pulseAnim }], borderColor: theme.primary }]}>
             <Text style={styles.scanIcon}>🔍</Text>
           </Animated.View>
           <Text style={styles.scanningText}>Analyzing your meal...</Text>
@@ -142,25 +127,25 @@ export default function ScanScreen({ navigation }) {
           {image && <Image source={{ uri: image }} style={styles.resultImage} />}
           <View style={styles.resultHeader}>
             <Text style={styles.resultTitle}>{result.icon} {result.name}</Text>
-            <View style={styles.confidenceBadge}>
-              <Text style={styles.confidenceText}>{Math.floor(result.confidence || 88)}% match</Text>
+            <View style={[styles.confidenceBadge, { backgroundColor: theme.light }]}>
+              <Text style={[styles.confidenceText, { color: theme.primary }]}>{Math.floor(result.confidence || 88)}% match</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionLabel}>Macronutrients</Text>
           <View style={styles.portionControl}>
             <Text style={styles.sectionLabel}>Portion Size</Text>
             <View style={styles.portionRow}>
-              <TouchableOpacity style={styles.portionBtn} onPress={() => setPortionSize(Math.max(0.25, portionSize - 0.25))}>
+              <TouchableOpacity style={[styles.portionBtn, { backgroundColor: theme.primary }]} onPress={() => setPortionSize(Math.max(0.25, portionSize - 0.25))}>
                 <Text style={styles.portionBtnText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.portionValue}>{portionSize}x serving</Text>
-              <TouchableOpacity style={styles.portionBtn} onPress={() => setPortionSize(Math.min(3, portionSize + 0.25))}>
+              <TouchableOpacity style={[styles.portionBtn, { backgroundColor: theme.primary }]} onPress={() => setPortionSize(Math.min(3, portionSize + 0.25))}>
                 <Text style={styles.portionBtnText}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
+          <Text style={styles.sectionLabel}>Macronutrients</Text>
           <View style={styles.macroRow}>
             {[['Calories', Math.round(result.calories * portionSize), 'kcal', '#FF7043'], ['Protein', Math.round(result.protein * portionSize), 'g', '#42A5F5'], ['Carbs', Math.round(result.carbs * portionSize), 'g', '#FFCA28'], ['Fat', Math.round(result.fat * portionSize), 'g', '#AB47BC']].map(([label, val, unit, color], i) => (
               <View key={i} style={styles.macroBox}>
@@ -180,11 +165,11 @@ export default function ScanScreen({ navigation }) {
           ))}
 
           <View style={styles.actionRow}>
-            <TouchableOpacity style={[styles.logBtn, saved && styles.logBtnDone]} onPress={logMeal} disabled={saving || saved}>
+            <TouchableOpacity style={[styles.logBtn, { backgroundColor: saved ? '#388E3C' : theme.primary }]} onPress={logMeal} disabled={saving || saved}>
               {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.logBtnText}>{saved ? '✅ Logged!' : '📥 Log This Meal'}</Text>}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.retryBtn} onPress={reset}>
-              <Text style={styles.retryBtnText}>🔄 Scan Again</Text>
+            <TouchableOpacity style={[styles.retryBtn, { borderColor: theme.primary }]} onPress={reset}>
+              <Text style={[styles.retryBtnText, { color: theme.primary }]}>🔄 Scan Again</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -194,10 +179,10 @@ export default function ScanScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
+  container: { flex: 1 },
   content: { padding: 20, flexGrow: 1 },
   idleBox: { alignItems: 'center' },
-  cameraFrame: { width: 180, height: 180, borderRadius: 24, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#1B5E20', borderStyle: 'dashed', marginBottom: 20 },
+  cameraFrame: { width: 180, height: 180, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderStyle: 'dashed', marginBottom: 20 },
   cameraIcon: { fontSize: 70 },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
   sub: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 22 },
@@ -218,12 +203,12 @@ const styles = StyleSheet.create({
   resultImage: { width: '100%', height: 180, borderRadius: 16, marginBottom: 16 },
   resultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   resultTitle: { fontSize: 18, fontWeight: 'bold', flex: 1 },
-  confidenceBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  confidenceBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   confidenceText: { fontSize: 12, fontWeight: 'bold' },
   sectionLabel: { fontSize: 13, fontWeight: 'bold', color: '#999', marginBottom: 10, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 },
   portionControl: { marginBottom: 16 },
   portionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
-  portionBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#4CAF50', alignItems: 'center', justifyContent: 'center' },
+  portionBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   portionBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
   portionValue: { fontSize: 16, fontWeight: '600', minWidth: 100, textAlign: 'center' },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
@@ -236,7 +221,6 @@ const styles = StyleSheet.create({
   microVal: { fontSize: 14, fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
   logBtn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
-  logBtnDone: { backgroundColor: '#388E3C' },
   logBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   retryBtn: { flex: 1, borderWidth: 2, padding: 14, borderRadius: 12, alignItems: 'center' },
   retryBtnText: { fontWeight: 'bold', fontSize: 14 },
