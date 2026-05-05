@@ -26,7 +26,8 @@
       "edgeToEdgeEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
@@ -43,6 +44,13 @@
           "color": "#1B5E20"
         }
       ]
-    ]
+    ],
+    "metro": {
+      "resolver": {
+        "alias": {
+          "react-native": "react-native-web"
+        }
+      }
+    }
   }
 }

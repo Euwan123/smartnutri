@@ -1,8 +1,6 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, ActivityIndicator, Animated, Dimensions } from 'react-native';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { auth, db } from '../firebase';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -48,304 +46,150 @@ const ringStyles = StyleSheet.create({
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
-  const [meals, setMeals] = useState([]);
-  const [stats, setStats] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-  const [streak, setStreak] = useState(0);
-  const [childAlerts, setChildAlerts] = useState([]);
-  const [aiTip, setAiTip] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [loading, setLoading] = useState(false);
+  const [todayStats, setTodayStats] = useState({
+    calories: 1250,
+    protein: 45,
+    carbs: 180,
+    fat: 35,
+    water: 6,
+    meals: 3
+  });
 
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good Morning';
-    if (h < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  })();
-
-  const calcStreak = (allMeals) => {
-    const days = new Set(allMeals.map(m => new Date(m.date).toDateString()));
-    let s = 0;
-    const check = new Date();
-    while (days.has(check.toDateString())) {
-      s++;
-      check.setDate(check.getDate() - 1);
-    }
-    return s;
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-      setUserName(user.displayName?.split(' ')[0] || 'there');
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const mealsRef = collection(db, 'users', user.uid, 'meals');
-
-      let todayMeals = [];
-      let recentMeals = [];
-      let allMeals = [];
-
-      try {
-        const [todaySnap, recentSnap, allSnap] = await Promise.all([
-          getDocs(query(mealsRef, where('date', '>=', today.toISOString()), orderBy('date', 'desc'))),
-          getDocs(query(mealsRef, orderBy('date', 'desc'), limit(4))),
-          getDocs(query(mealsRef, orderBy('date', 'desc'))),
-        ]);
-        todayMeals = todaySnap.docs.map(d => d.data());
-        recentMeals = recentSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allMeals = allSnap.docs.map(d => d.data());
-      } catch (indexError) {
-        const allSnap = await getDocs(mealsRef);
-        allMeals = allSnap.docs.map(d => d.data()).sort((a, b) => new Date(b.date) - new Date(a.date));
-        todayMeals = allMeals.filter(m => new Date(m.date) >= today);
-        recentMeals = allSnap.docs.slice(0, 4).map(d => ({ id: d.id, ...d.data() }));
-      }
-
-      const totals = todayMeals.reduce((acc, m) => ({
-        calories: acc.calories + (m.calories || 0),
-        protein: acc.protein + (m.protein || 0),
-        carbs: acc.carbs + (m.carbs || 0),
-        fat: acc.fat + (m.fat || 0),
-      }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-
-      let alerts = [];
-      try {
-        const childSnap = await getDocs(collection(db, 'users', user.uid, 'children'));
-        alerts = childSnap.docs.filter(d => d.data().iron < 6 || d.data().vitA < 200).map(d => d.data().name);
-      } catch (e) {
-        console.log('Children fetch error:', e);
-      }
-
-      const missing = [];
-      if (totals.protein < 40) missing.push('protein');
-      if (totals.calories < 800) missing.push('calories');
-      if (totals.fat < 20) missing.push('healthy fats');
-      setAiTip(
-        missing.length > 0
-          ? `You're low on ${missing.join(' and ')} today. Try adding ${totals.protein < 40 ? 'Tinolang Manok or Bangus' : 'Pinakbet or Sinigang'} to your next meal.`
-          : 'Great job! Your nutrition looks balanced today. Keep it up! 💪'
-      );
-
-      setStats({
-        calories: Math.round(totals.calories),
-        protein: Math.round(totals.protein),
-        carbs: Math.round(totals.carbs),
-        fat: Math.round(totals.fat),
-      });
-      setMeals(recentMeals);
-      setChildAlerts(alerts);
-      setStreak(calcStreak(allMeals));
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    } catch (e) {
-      console.log('HomeScreen fetch error:', e);
-    }
-    setLoading(false);
-  };
-
-  useFocusEffect(useCallback(() => { fadeAnim.setValue(0); fetchData(); }, []));
+  const mockMeals = [
+    { id: 1, name: 'Sinigang na Baboy', calories: 320, time: '12:30 PM', icon: '🍲' },
+    { id: 2, name: 'Adobong Manok', calories: 280, time: '8:00 AM', icon: '🍗' },
+    { id: 3, name: 'Pancit Canton', calories: 350, time: '6:00 PM', icon: '🍜' },
+  ];
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle="light-content" backgroundColor={theme.primary} />
-      <LinearGradient colors={[theme.primary, theme.secondary || theme.primary]} style={styles.banner}>
-        <View style={styles.bannerTop}>
+      
+      <LinearGradient colors={[theme.primary, theme.secondary]} style={styles.header}>
+        <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>{greeting}, {userName} 👋</Text>
-            <Text style={styles.bannerTitle}>Smart Nutri Scanner</Text>
+            <Text style={styles.greeting}>Good Morning!</Text>
+            <Text style={styles.subGreeting}>Let's track your nutrition today</Text>
           </View>
-          {streak > 0 && (
-            <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={20} color="#FF7043" />
-              <Text style={styles.streakNum}>{streak}</Text>
-            </View>
-          )}
+          <TouchableOpacity style={styles.notificationBtn}>
+            <Ionicons name="notifications-outline" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.bannerSub}>AI-Powered Filipino Meal Analyzer</Text>
+        
+        <View style={styles.statsCard}>
+          <Text style={styles.caloriesBig}>{todayStats.calories}</Text>
+          <Text style={styles.caloriesLabel}>calories consumed</Text>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalText}>Goal: 2000 kcal</Text>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${(todayStats.calories / 2000) * 100}%`, backgroundColor: theme.accent }]} />
+            </View>
+          </View>
+        </View>
       </LinearGradient>
 
-      {loading ? (
-        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 60 }} />
-      ) : (
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={[styles.card, { backgroundColor: theme.light }]}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={[styles.cardTitle, { color: theme.primary }]}>📊 Today's Nutrition</Text>
-              <Text style={styles.cardSub}>{stats.calories} / 2000 kcal</Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${Math.min((stats.calories / 2000) * 100, 100)}%`, backgroundColor: theme.primary }]} />
-            </View>
-            <View style={styles.ringsRow}>
-              <NutrientRing value={stats.calories} max={2000} color="#FF7043" label="Calories" unit="kcal" />
-              <NutrientRing value={stats.protein} max={60} color="#42A5F5" label="Protein" unit="g" />
-              <NutrientRing value={stats.carbs} max={250} color="#FFCA28" label="Carbs" unit="g" />
-              <NutrientRing value={stats.fat} max={65} color="#AB47BC" label="Fat" unit="g" />
-            </View>
-          </View>
+      <View style={styles.nutrientsSection}>
+        <Text style={styles.sectionTitle}>Today's Nutrients</Text>
+        <View style={styles.nutrientsRow}>
+          <NutrientRing value={todayStats.protein} max={60} color="#42A5F5" label="Protein" unit="g" />
+          <NutrientRing value={todayStats.carbs} max={250} color="#FFCA28" label="Carbs" unit="g" />
+          <NutrientRing value={todayStats.fat} max={65} color="#AB47BC" label="Fat" unit="g" />
+        </View>
+      </View>
 
-          <View style={[styles.aiCard, { backgroundColor: theme.light, borderLeftColor: theme.primary }]}>
-            <View style={styles.aiHeader}>
-              <Text style={styles.aiIcon}>🤖</Text>
-              <Text style={[styles.aiTitle, { color: theme.primary }]}>AI Nutrition Tip</Text>
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.actionsGrid}>
+          <TouchableOpacity style={[styles.actionCard, { backgroundColor: theme.card }]} onPress={() => navigation.navigate('ScanTab')}>
+            <View style={[styles.actionIcon, { backgroundColor: theme.light }]}>
+              <Ionicons name="camera" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.aiText}>{aiTip}</Text>
-          </View>
-
-          <TouchableOpacity style={[styles.waterCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Water')}>
-            <View style={styles.waterHeader}>
-              <Text style={styles.waterIcon}>💧</Text>
-              <Text style={[styles.waterTitle, { color: theme.primary }]}>Water Tracker</Text>
-              <Text style={styles.waterArrow}>›</Text>
-            </View>
-            <Text style={styles.waterText}>Stay hydrated! Track your daily water intake.</Text>
+            <Text style={styles.actionText}>Scan Meal</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.exerciseCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Exercise')}>
-            <View style={styles.exerciseHeader}>
-              <Text style={styles.exerciseIcon}>🏋️</Text>
-              <Text style={[styles.exerciseTitle, { color: theme.primary }]}>Exercise Tracker</Text>
-              <Text style={styles.exerciseArrow}>›</Text>
+          
+          <TouchableOpacity style={[styles.actionCard, { backgroundColor: theme.card }]} onPress={() => navigation.navigate('Water')}>
+            <View style={[styles.actionIcon, { backgroundColor: theme.light }]}>
+              <Ionicons name="water" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.exerciseText}>Log your workouts and track calories burned.</Text>
+            <Text style={styles.actionText}>Water Intake</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.mealPlanCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('MealPlan')}>
-            <View style={styles.mealPlanHeader}>
-              <Text style={styles.mealPlanIcon}>📅</Text>
-              <Text style={[styles.mealPlanTitle, { color: theme.primary }]}>Meal Planner</Text>
-              <Text style={styles.mealPlanArrow}>›</Text>
+          
+          <TouchableOpacity style={[styles.actionCard, { backgroundColor: theme.card }]} onPress={() => navigation.navigate('Exercise')}>
+            <View style={[styles.actionIcon, { backgroundColor: theme.light }]}>
+              <Ionicons name="fitness" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.mealPlanText}>Plan your meals and stay on track with nutrition goals.</Text>
+            <Text style={styles.actionText}>Exercise</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.recipeCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Recipe')}>
-            <View style={styles.recipeHeader}>
-              <Text style={styles.recipeIcon}>🍳</Text>
-              <Text style={[styles.recipeTitle, { color: theme.primary }]}>Recipe Suggestions</Text>
-              <Text style={styles.recipeArrow}>›</Text>
+          
+          <TouchableOpacity style={[styles.actionCard, { backgroundColor: theme.card }]} onPress={() => navigation.navigate('MealPlan')}>
+            <View style={[styles.actionIcon, { backgroundColor: theme.light }]}>
+              <Ionicons name="restaurant" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.recipeText}>Discover personalized recipes based on your meal history.</Text>
+            <Text style={styles.actionText}>Meal Plan</Text>
           </TouchableOpacity>
+        </View>
+      </View>
 
-          {childAlerts.length > 0 && (
-            <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Child')}>
-              <View style={styles.alertHeader}>
-                <Text style={styles.alertIcon}>⚠️</Text>
-                <Text style={styles.alertTitle}>Child Nutrition Alert</Text>
-                <Text style={styles.alertArrow}>›</Text>
+      <View style={styles.recentMeals}>
+        <View style={styles.mealsHeader}>
+          <Text style={styles.sectionTitle}>Recent Meals</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('History')}>
+            <Text style={[styles.seeAll, { color: theme.primary }]}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {mockMeals.map((meal) => (
+          <TouchableOpacity key={meal.id} style={[styles.mealCard, { backgroundColor: theme.card }]}>
+            <View style={styles.mealLeft}>
+              <Text style={styles.mealIcon}>{meal.icon}</Text>
+              <View style={styles.mealInfo}>
+                <Text style={styles.mealName}>{meal.name}</Text>
+                <Text style={styles.mealTime}>{meal.time}</Text>
               </View>
-              <Text style={styles.alertText}>{childAlerts.join(', ')} {childAlerts.length > 1 ? 'are' : 'is'} low on key nutrients. Tap to view details.</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={[styles.card, { backgroundColor: theme.light }]}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={[styles.cardTitle, { color: theme.primary }]}>🍽️ Recent Meals</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('History')}>
-                <Text style={[styles.seeAll, { color: theme.primary }]}>See All →</Text>
-              </TouchableOpacity>
             </View>
-            {meals.length === 0 ? (
-              <View style={styles.emptyMeals}>
-                <Text style={styles.emptyIcon}>🍽️</Text>
-                <Text style={styles.emptyText}>No meals logged yet</Text>
-                <TouchableOpacity style={[styles.scanNowBtn, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('ScanTab')}>
-                  <Text style={styles.scanNowText}>📷 Scan Your First Meal</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              meals.map((meal, i) => (
-                <View key={i} style={[styles.mealItem, { borderLeftColor: ['#FF7043', '#42A5F5', '#FFCA28', '#AB47BC'][i % 4] }]}>
-                  <View style={styles.mealLeft}>
-                    <Text style={styles.mealIcon}>{meal.icon || '🍽️'}</Text>
-                    <View>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={styles.mealTime}>{new Date(meal.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.mealRight}>
-                    <Text style={styles.mealCal}>{meal.calories}</Text>
-                    <Text style={styles.mealCalLabel}>kcal</Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        </Animated.View>
-      )}
-      <View style={{ height: 30 }} />
+            <View style={styles.mealRight}>
+              <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+              <Ionicons name="chevron-forward" size={16} color="#ccc" />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  banner: { padding: 24, paddingTop: 40, paddingBottom: 28 },
-  bannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
-  greeting: { color: '#fff', fontSize: 13, marginBottom: 4 },
-  bannerTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  bannerSub: { color: '#fff', fontSize: 13 },
-  streakBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 10, alignItems: 'center', minWidth: 54 },
-  streakNum: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  card: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, elevation: 3, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10 },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold' },
-  cardSub: { fontSize: 12, color: '#999' },
-  seeAll: { fontSize: 13, fontWeight: '600' },
-  progressBarBg: { height: 6, backgroundColor: '#eee', borderRadius: 4, marginBottom: 16, overflow: 'hidden' },
-  progressBarFill: { height: 6, borderRadius: 4 },
-  ringsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  aiCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4 },
-  aiHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-  aiIcon: { fontSize: 20 },
-  aiTitle: { fontSize: 15, fontWeight: 'bold' },
-  aiText: { color: '#444', fontSize: 14, lineHeight: 22 },
-  waterCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#42A5F5' },
-  waterHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  waterIcon: { fontSize: 18 },
-  waterTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
-  waterArrow: { fontSize: 20, color: '#42A5F5' },
-  waterText: { color: '#444', fontSize: 14, lineHeight: 22 },
-  exerciseCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FF7043' },
-  exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  exerciseIcon: { fontSize: 18 },
-  exerciseTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
-  exerciseArrow: { fontSize: 20, color: '#FF7043' },
-  exerciseText: { color: '#444', fontSize: 14, lineHeight: 22 },
-  mealPlanCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#AB47BC' },
-  mealPlanHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  mealPlanIcon: { fontSize: 18 },
-  mealPlanTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
-  mealPlanArrow: { fontSize: 20, color: '#AB47BC' },
-  mealPlanText: { color: '#444', fontSize: 14, lineHeight: 22 },
-  recipeCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#4CAF50' },
-  recipeHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  recipeIcon: { fontSize: 18 },
-  recipeTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
-  recipeArrow: { fontSize: 20, color: '#4CAF50' },
-  recipeText: { color: '#444', fontSize: 14, lineHeight: 22 },
-  alertCard: { backgroundColor: '#FFF8E1', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FFA000' },
-  alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
-  alertIcon: { fontSize: 18 },
-  alertTitle: { fontSize: 15, fontWeight: 'bold', color: '#E65100', flex: 1 },
-  alertArrow: { fontSize: 20, color: '#FFA000' },
-  alertText: { color: '#666', fontSize: 13, lineHeight: 20 },
-  mealItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5', borderLeftWidth: 3, paddingLeft: 10, marginLeft: -10 },
-  mealLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  mealIcon: { fontSize: 28 },
-  mealName: { fontSize: 14, fontWeight: '600', color: '#333' },
+  header: { paddingTop: 50, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  greeting: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  subGreeting: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  notificationBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  statsCard: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 20, alignItems: 'center' },
+  caloriesBig: { fontSize: 48, fontWeight: 'bold', color: '#fff' },
+  caloriesLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  goalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 15, width: '100%' },
+  goalText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginRight: 10 },
+  progressBar: { flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 3 },
+  progressFill: { height: '100%', borderRadius: 3 },
+  nutrientsSection: { padding: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  nutrientsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  quickActions: { padding: 20, paddingTop: 10 },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  actionCard: { width: '48%', backgroundColor: '#fff', borderRadius: 15, padding: 20, alignItems: 'center', marginBottom: 15, elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  actionIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  actionText: { fontSize: 13, fontWeight: '600', color: '#333' },
+  recentMeals: { padding: 20, paddingTop: 10 },
+  mealsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  seeAll: { fontSize: 14, fontWeight: '600' },
+  mealCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+  mealLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  mealIcon: { fontSize: 30, marginRight: 15 },
+  mealInfo: { flex: 1 },
+  mealName: { fontSize: 15, fontWeight: '600', color: '#333' },
   mealTime: { fontSize: 12, color: '#999', marginTop: 2 },
   mealRight: { alignItems: 'flex-end' },
-  mealCal: { fontSize: 16, fontWeight: 'bold', color: '#FF7043' },
-  mealCalLabel: { fontSize: 10, color: '#999' },
-  emptyMeals: { alignItems: 'center', paddingVertical: 24 },
-  emptyIcon: { fontSize: 48, marginBottom: 8 },
-  emptyText: { color: '#aaa', fontSize: 14, marginBottom: 16 },
-  scanNowBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
-  scanNowText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  mealCalories: { fontSize: 16, fontWeight: 'bold', color: '#1B5E20', marginBottom: 2 },
 });

@@ -3,11 +3,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
-import { auth } from './firebase';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import HomeScreen from './screens/HomeScreen';
 import ScanScreen from './screens/ScanScreen';
 import HistoryScreen from './screens/HistoryScreen';
@@ -28,7 +28,6 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function CustomTabBar({ state, descriptors, navigation }) {
-  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const tabs = [
     { name: 'Home', icon: 'home', iconOutline: 'home-outline' },
@@ -39,7 +38,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
   ];
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom + 8, backgroundColor: theme.card }]}>
+    <View style={[styles.tabBar, { backgroundColor: theme.card }]}>
       {tabs.map((tab, index) => {
         const route = state.routes[index];
         const isFocused = state.index === index;
@@ -95,17 +94,8 @@ function MainTabs() {
 }
 
 function AppNavigator() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
   const { theme } = useTheme();
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
 
   if (loading) {
     return (
@@ -147,7 +137,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppNavigator />
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
