@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Image } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,12 +16,40 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      try {
+        const savedEmail = await SecureStore.getItemAsync('saved_email');
+        const savedPassword = await SecureStore.getItemAsync('saved_password');
+        const savedRemember = await SecureStore.getItemAsync('remember_me');
+        if (savedEmail && savedPassword && savedRemember === 'true') {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.log('Error loading saved credentials:', error);
+      }
+    };
+    loadSavedCredentials();
+  }, []);
 
   const login = async () => {
     if (!email || !password) return Alert.alert('Error', 'Please fill in all fields');
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (rememberMe) {
+        await SecureStore.setItemAsync('saved_email', email.trim());
+        await SecureStore.setItemAsync('saved_password', password);
+        await SecureStore.setItemAsync('remember_me', 'true');
+      } else {
+        await SecureStore.deleteItemAsync('saved_email');
+        await SecureStore.deleteItemAsync('saved_password');
+        await SecureStore.setItemAsync('remember_me', 'false');
+      }
     } catch (e) {
       const msg = e.code === 'auth/invalid-credential' ? 'Invalid email or password' : e.message;
       Alert.alert('Login Failed', msg);
@@ -64,9 +93,27 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.forgotBtn}>
+          <TouchableOpacity style={styles.forgotBtn} onPress={async () => {
+            if (!email) {
+              Alert.alert('Error', 'Please enter your email address first');
+              return;
+            }
+            try {
+              await sendPasswordResetEmail(auth, email.trim());
+              Alert.alert('✅ Reset Email Sent', 'Check your email for password reset instructions.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to send reset email. Please try again.');
+            }
+          }}>
             <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot Password?</Text>
           </TouchableOpacity>
+
+          <View style={styles.checkboxRow}>
+            <TouchableOpacity style={[styles.checkbox, rememberMe && { backgroundColor: theme.primary }]} onPress={() => setRememberMe(!rememberMe)}>
+              {rememberMe && <Ionicons name="checkmark" size={16} color="#fff" />}
+            </TouchableOpacity>
+            <Text style={styles.checkboxText}>Remember me</Text>
+          </View>
 
           <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }, loading && styles.btnDisabled]} onPress={login} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
@@ -106,6 +153,9 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 15, color: '#333' },
   forgotBtn: { alignSelf: 'flex-end', marginBottom: 20, marginTop: -8 },
   forgotText: { fontSize: 13, fontWeight: '600' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#ddd', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  checkboxText: { fontSize: 14, color: '#333' },
   btn: { padding: 16, borderRadius: 14, alignItems: 'center', elevation: 4, shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   btnDisabled: { opacity: 0.7 },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },

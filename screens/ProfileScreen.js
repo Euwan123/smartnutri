@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db, storage } from '../firebase';
-import { useTheme, THEMES } from '../context/ThemeContext';
+import { setupNotifications, scheduleMealReminder, scheduleWaterReminder, cancelAllNotifications } from '../services/NotificationService';
 
 const { width } = Dimensions.get('window');
 
@@ -180,8 +180,34 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <Text style={[styles.cardTitle, { color: theme.primary }]}>🔔 Notifications & Privacy</Text>
             {[
-              { label: 'Meal Reminders', sub: 'Get reminded to log meals', val: notifications, set: setNotifications },
-              { label: 'Child Nutrition Alerts', sub: 'Alerts when nutrients are low', val: childAlerts, set: setChildAlerts },
+              { label: 'Meal Reminders', sub: 'Get reminded to log meals', val: notifications, set: async (v) => {
+              setNotifications(v);
+              if (v) {
+                const granted = await setupNotifications();
+                if (granted) {
+                  await scheduleMealReminder();
+                  Alert.alert('✅ Notifications Enabled', 'You will receive meal reminders at noon daily.');
+                } else {
+                  Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+                  setNotifications(false);
+                }
+              } else {
+                await cancelAllNotifications();
+              }
+            } },
+            { label: 'Water Reminders', sub: 'Stay hydrated with daily reminders', val: childAlerts, set: async (v) => {
+              setChildAlerts(v);
+              if (v) {
+                const granted = await setupNotifications();
+                if (granted) {
+                  await scheduleWaterReminder();
+                  Alert.alert('✅ Water Reminders Enabled', 'You will receive hydration reminders at 10 AM daily.');
+                } else {
+                  Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+                  setChildAlerts(false);
+                }
+              }
+            } },
               { label: 'Public Profile', sub: 'Others can see your community posts', val: isPublic, set: async (v) => { setIsPublic(v); await updateDoc(doc(db, 'users', user.uid), { isPublic: v }); } },
             ].map((item, i) => (
               <View key={i} style={styles.toggleRow}>
@@ -192,6 +218,14 @@ export default function ProfileScreen() {
                 <Switch value={item.val} onValueChange={item.set} trackColor={{ true: theme.primary }} thumbColor="#fff" />
               </View>
             ))}
+          </View>
+
+          <View style={styles.card}>
+            <Text style={[styles.cardTitle, { color: theme.primary }]}>📤 Data Management</Text>
+            <TouchableOpacity style={styles.exportBtn} onPress={() => navigation.navigate('Export')}>
+              <Text style={styles.exportBtnText}>📊 Export My Data</Text>
+              <Text style={styles.exportBtnSub}>Download your health data as JSON</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.card}>
@@ -289,6 +323,9 @@ const styles = StyleSheet.create({
   toggleInfo: { flex: 1, marginRight: 10 },
   toggleLabel: { fontSize: 14, color: '#333', fontWeight: '500' },
   toggleSub: { fontSize: 12, color: '#999', marginTop: 2 },
+  exportBtn: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 12 },
+  exportBtnText: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 4 },
+  exportBtnSub: { fontSize: 12, color: '#666' },
   aboutText: { fontSize: 13, color: '#888', marginBottom: 4 },
   logoutBtn: { margin: 14, marginTop: 14, padding: 16, borderRadius: 14, backgroundColor: '#FFEBEE', alignItems: 'center' },
   logoutText: { color: '#E53935', fontWeight: 'bold', fontSize: 16 },

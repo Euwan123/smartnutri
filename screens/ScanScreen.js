@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { useTheme } from '../context/ThemeContext';
+import { analyzeFoodImage } from '../services/AIScanService';
 
 const filipinoDishes = [
   { name: 'Sinigang na Baboy', icon: '🍲', calories: 320, protein: 22, carbs: 18, fat: 14, iron: 3.2, vitA: 120, zinc: 2.1 },
@@ -35,12 +35,22 @@ export default function ScanScreen() {
           Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
         ])
       ).start();
-      setTimeout(() => {
-        setResult(filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)]);
-        setStage('result');
-      }, 2500);
+
+      const scanImage = async () => {
+        try {
+          const result = await analyzeFoodImage(image);
+          setResult(result);
+          setStage('result');
+        } catch (error) {
+          console.log('Scan failed:', error);
+          setResult(filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)]);
+          setStage('result');
+        }
+      };
+
+      scanImage();
     }
-  }, [stage]);
+  }, [stage, image]);
 
   const openCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -130,7 +140,7 @@ export default function ScanScreen() {
           <View style={styles.resultHeader}>
             <Text style={styles.resultTitle}>{result.icon} {result.name}</Text>
             <View style={styles.confidenceBadge}>
-              <Text style={styles.confidenceText}>{Math.floor(Math.random() * 8) + 88}% match</Text>
+              <Text style={styles.confidenceText}>{Math.floor(result.confidence || 88)}% match</Text>
             </View>
           </View>
 

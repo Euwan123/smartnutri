@@ -15,7 +15,12 @@ import CommunityScreen from './screens/CommunityScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
+import TermsScreen from './screens/TermsScreen';
 import ChildScreen from './screens/ChildScreen';
+import WaterScreen from './screens/WaterScreen';
+import ExerciseScreen from './screens/ExerciseScreen';
+import MealPlanScreen from './screens/MealPlanScreen';
+import ExportScreen from './screens/ExportScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -96,9 +101,14 @@ function AppNavigator() {
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Child" component={ChildScreen} />
+            <Stack.Screen name="Water" component={WaterScreen} />
+            <Stack.Screen name="Exercise" component={ExerciseScreen} />
+            <Stack.Screen name="MealPlan" component={MealPlanScreen} />
+            <Stack.Screen name="Export" component={ExportScreen} />
           </>
         ) : (
           <>
+            <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
           </>

@@ -154,6 +154,33 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.aiText}>{aiTip}</Text>
           </View>
 
+          <TouchableOpacity style={[styles.waterCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Water')}>
+            <View style={styles.waterHeader}>
+              <Text style={styles.waterIcon}>💧</Text>
+              <Text style={[styles.waterTitle, { color: theme.primary }]}>Water Tracker</Text>
+              <Text style={styles.waterArrow}>›</Text>
+            </View>
+            <Text style={styles.waterText}>Stay hydrated! Track your daily water intake.</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.exerciseCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('Exercise')}>
+            <View style={styles.exerciseHeader}>
+              <Text style={styles.exerciseIcon}>🏋️</Text>
+              <Text style={[styles.exerciseTitle, { color: theme.primary }]}>Exercise Tracker</Text>
+              <Text style={styles.exerciseArrow}>›</Text>
+            </View>
+            <Text style={styles.exerciseText}>Log your workouts and track calories burned.</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.mealPlanCard, { backgroundColor: theme.light }]} onPress={() => navigation.navigate('MealPlan')}>
+            <View style={styles.mealPlanHeader}>
+              <Text style={styles.mealPlanIcon}>📅</Text>
+              <Text style={[styles.mealPlanTitle, { color: theme.primary }]}>Meal Planner</Text>
+              <Text style={styles.mealPlanArrow}>›</Text>
+            </View>
+            <Text style={styles.mealPlanText}>Plan your meals and stay on track with nutrition goals.</Text>
+          </TouchableOpacity>
+
           {childAlerts.length > 0 && (
             <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Child')}>
               <View style={styles.alertHeader}>
@@ -227,6 +254,24 @@ const styles = StyleSheet.create({
   aiIcon: { fontSize: 20 },
   aiTitle: { fontSize: 15, fontWeight: 'bold' },
   aiText: { color: '#444', fontSize: 14, lineHeight: 22 },
+  waterCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#42A5F5' },
+  waterHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
+  waterIcon: { fontSize: 18 },
+  waterTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
+  waterArrow: { fontSize: 20, color: '#42A5F5' },
+  waterText: { color: '#444', fontSize: 14, lineHeight: 22 },
+  exerciseCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FF7043' },
+  exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
+  exerciseIcon: { fontSize: 18 },
+  exerciseTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
+  exerciseArrow: { fontSize: 20, color: '#FF7043' },
+  exerciseText: { color: '#444', fontSize: 14, lineHeight: 22 },
+  mealPlanCard: { margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#AB47BC' },
+  mealPlanHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
+  mealPlanIcon: { fontSize: 18 },
+  mealPlanTitle: { fontSize: 15, fontWeight: 'bold', flex: 1 },
+  mealPlanArrow: { fontSize: 20, color: '#AB47BC' },
+  mealPlanText: { color: '#444', fontSize: 14, lineHeight: 22 },
   alertCard: { backgroundColor: '#FFF8E1', margin: 14, marginBottom: 0, borderRadius: 20, padding: 18, borderLeftWidth: 4, borderLeftColor: '#FFA000' },
   alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
   alertIcon: { fontSize: 18 },
