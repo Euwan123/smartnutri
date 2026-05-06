@@ -23,7 +23,10 @@
         "backgroundColor": "#1B5E20"
       },
       "package": "com.smartnutri.app",
-      "edgeToEdgeEnabled": false
+      "edgeToEdgeEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -45,6 +48,11 @@
         }
       ],
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8d3493fa-e98e-48d8-a98d-27082ef7fcd5"
+      }
+    }
   }
 }
