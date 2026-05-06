@@ -47,7 +47,9 @@
           "color": "#1B5E20"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-font"
     ],
     "extra": {
       "eas": {
