@@ -1,4 +1,8 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView,
+} from 'react-native';
 import { useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +13,12 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
   const { theme } = useTheme();
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
@@ -21,12 +26,11 @@ export default function LoginScreen({ navigation }) {
   useEffect(() => {
     const loadSaved = async () => {
       try {
-        const savedEmail = await SecureStore.getItemAsync('saved_email');
-        const savedPassword = await SecureStore.getItemAsync('saved_password');
+        const savedData = await SecureStore.getItemAsync('user_data');
         const savedRemember = await SecureStore.getItemAsync('remember_me');
-        if (savedEmail && savedPassword && savedRemember === 'true') {
-          setEmail(savedEmail);
-          setPassword(savedPassword);
+        if (savedData && savedRemember === 'true') {
+          const parsed = JSON.parse(savedData);
+          setEmail(parsed.email || '');
           setRememberMe(true);
         }
       } catch (_) {}
@@ -41,30 +45,43 @@ export default function LoginScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
-      if (rememberMe) {
-        await SecureStore.setItemAsync('saved_email', email.trim());
-        await SecureStore.setItemAsync('saved_password', password);
-        await SecureStore.setItemAsync('remember_me', 'true');
-      } else {
-        await SecureStore.deleteItemAsync('saved_email');
-        await SecureStore.deleteItemAsync('saved_password');
-        await SecureStore.setItemAsync('remember_me', 'false');
-      }
+      await signIn(email.trim(), password, rememberMe);
     } catch (e) {
-      Alert.alert('Login Failed', 'Use test@smartnutri.com / password123');
+      const msg = e.message === 'EMAIL_NOT_FOUND'
+        ? 'No account found with this email'
+        : e.message === 'INVALID_PASSWORD'
+        ? 'Incorrect password'
+        : e.message === 'INVALID_LOGIN_CREDENTIALS'
+        ? 'Invalid email or password'
+        : e.message || 'Login failed. Please try again.';
+      Alert.alert('Login Failed', msg);
     }
     setLoading(false);
   };
 
-  const handleForgotPassword = async () => {
-    Alert.alert('Info', 'Mock app - password reset not available');
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      Alert.alert('Google Sign-In Failed', e.message);
+    }
+    setGoogleLoading(false);
   };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
-        <LinearGradient colors={[theme.primary, theme.secondary]} style={[styles.topSection, { paddingTop: insets.top + 20 }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <LinearGradient
+          colors={[theme.primary, theme.secondary]}
+          style={[styles.topSection, { paddingTop: insets.top + 20 }]}
+        >
           <View style={styles.logoCircle}>
             <Ionicons name="leaf" size={44} color="#fff" />
           </View>
@@ -75,6 +92,28 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.form}>
           <Text style={styles.title}>Welcome Back 👋</Text>
           <Text style={styles.sub}>Sign in to continue tracking your nutrition</Text>
+
+          {/* Google Sign In */}
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={handleGoogle}
+            disabled={googleLoading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color="#333" size="small" />
+            ) : (
+              <>
+                <Text style={styles.googleIcon}>G</Text>
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or sign in with email</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <Text style={styles.label}>Email</Text>
           <View style={[styles.inputWrapper, focusedField === 'email' && { borderColor: theme.primary, backgroundColor: theme.light }]}>
@@ -111,23 +150,42 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.forgotBtn} onPress={handleForgotPassword}>
+          <TouchableOpacity
+            style={styles.forgotBtn}
+            onPress={() => Alert.alert('Reset Password', 'Enter your email and we\'ll send a reset link.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Send', onPress: () => Alert.alert('Sent!', 'Check your email for the reset link.') },
+            ])}
+          >
             <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot Password?</Text>
           </TouchableOpacity>
 
           <View style={styles.checkboxRow}>
-            <TouchableOpacity style={[styles.checkbox, rememberMe && { backgroundColor: theme.primary }]} onPress={() => setRememberMe(!rememberMe)}>
+            <TouchableOpacity
+              style={[styles.checkbox, rememberMe && { backgroundColor: theme.primary }]}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
               {rememberMe && <Ionicons name="checkmark" size={16} color="#fff" />}
             </TouchableOpacity>
             <Text style={styles.checkboxText}>Remember me</Text>
           </View>
 
-          <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }, loading && styles.btnDisabled]} onPress={login} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: theme.primary }, loading && styles.btnDisabled]}
+            onPress={login}
+            disabled={loading}
+          >
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.btnText}>Sign In</Text>
+            }
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('Signup')} style={styles.switchBtn}>
-            <Text style={styles.switchText}>Don't have an account? <Text style={[styles.switchLink, { color: theme.primary }]}>Sign Up</Text></Text>
+            <Text style={styles.switchText}>
+              Don't have an account?{' '}
+              <Text style={[styles.switchLink, { color: theme.primary }]}>Sign Up</Text>
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -143,6 +201,12 @@ const styles = StyleSheet.create({
   form: { backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 28, paddingTop: 32, marginTop: -20, flex: 1 },
   title: { fontSize: 22, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 4 },
   sub: { fontSize: 13, color: '#999', marginBottom: 24 },
+  googleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#ddd', borderRadius: 14, padding: 14, marginBottom: 20, backgroundColor: '#fff', gap: 10, elevation: 1 },
+  googleIcon: { fontSize: 18, fontWeight: 'bold', color: '#4285F4' },
+  googleText: { fontSize: 15, fontWeight: '600', color: '#333' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#eee' },
+  dividerText: { fontSize: 12, color: '#bbb', fontWeight: '500' },
   label: { fontSize: 12, fontWeight: '700', color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#eee', borderRadius: 14, paddingHorizontal: 14, marginBottom: 16, backgroundColor: '#FAFAFA', height: 54 },
   inputIcon: { marginRight: 10 },

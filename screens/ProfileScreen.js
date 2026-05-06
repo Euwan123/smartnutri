@@ -1,18 +1,18 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, ActivityIndicator, TextInput, Modal, Image, Dimensions } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { signOut, updateProfile } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
-import { auth, db, storage } from '../firebase';
+import { auth, db } from '../firebase';
 import { useTheme, THEMES } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { setupNotifications, scheduleMealReminder, scheduleWaterReminder, cancelAllNotifications } from '../services/NotificationService';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { theme, setTheme } = useTheme();
+  const { signOut } = useAuth();
   const navigation = useNavigation();
   const [notifications, setNotifications] = useState(true);
   const [childAlerts, setChildAlerts] = useState(true);
@@ -46,7 +46,11 @@ export default function ProfileScreen() {
       const check = new Date();
       while (days.has(check.toDateString())) { streak++; check.setDate(check.getDate() - 1); }
       setStats({ meals: meals.length, children: childrenSnap.size, streak });
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log('Profile fetch error:', e);
+      // Use defaults if Firestore fails
+      setStats({ meals: 0, children: 0, streak: 0 });
+    }
     setLoading(false);
   };
 
@@ -62,7 +66,6 @@ export default function ProfileScreen() {
         location: editForm.location,
         calorieGoal: parseInt(editForm.calorieGoal) || 2000,
       });
-      if (editForm.name) await updateProfile(user, { displayName: editForm.name });
       setEditModal(false);
       fetchProfile();
       Alert.alert('Profile Updated!');
@@ -74,30 +77,20 @@ export default function ProfileScreen() {
     if (!perm.granted) return Alert.alert('Permission needed', 'Gallery access required');
     const picked = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
     if (!picked.canceled) {
-      setUploadingPhoto(true);
-      try {
-        const response = await fetch(picked.assets[0].uri);
-        const blob = await response.blob();
-        const storageRef = ref(storage, `avatars/${user.uid}`);
-        await uploadBytes(storageRef, blob);
-        const url = await getDownloadURL(storageRef);
-        await updateProfile(user, { photoURL: url });
-        await updateDoc(doc(db, 'users', user.uid), { photoURL: url });
-        fetchProfile();
-      } catch (e) { Alert.alert('Error', 'Failed to upload photo'); }
-      setUploadingPhoto(false);
+      Alert.alert('Info', 'Photo upload requires a real Firebase project to be configured.');
     }
   };
 
+  // Uses AuthContext signOut which properly clears SecureStore
   const logout = () => Alert.alert('Log Out', 'Are you sure?', [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Log Out', style: 'destructive', onPress: () => signOut(auth) },
+    { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
   ]);
 
   const bmi = userData?.weight && userData?.height ? (userData.weight / Math.pow(userData.height / 100, 2)).toFixed(1) : null;
   const bmiLabel = bmi ? (bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese') : null;
   const bmiColor = bmi ? (bmi < 18.5 ? '#42A5F5' : bmi < 25 ? '#2E7D32' : bmi < 30 ? '#FFA000' : '#E53935') : null;
-  const displayName = user?.displayName || userData?.name || 'User';
+  const displayName = user?.displayName || userData?.name || 'Demo User';
   const initial = displayName[0]?.toUpperCase() || 'U';
   const photoURL = user?.photoURL || userData?.photoURL;
   const age = userData?.birthdate ? Math.floor((Date.now() - new Date(userData.birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
@@ -210,7 +203,12 @@ export default function ProfileScreen() {
                   }
                 }
               }},
-              { label: 'Public Profile', sub: 'Others can see your community posts', val: isPublic, set: async (v) => { setIsPublic(v); await updateDoc(doc(db, 'users', user.uid), { isPublic: v }); } },
+              { label: 'Public Profile', sub: 'Others can see your community posts', val: isPublic, set: async (v) => {
+                setIsPublic(v);
+                try {
+                  await updateDoc(doc(db, 'users', user.uid), { isPublic: v });
+                } catch (e) { console.log(e); }
+              }},
             ].map((item, i) => (
               <View key={i} style={styles.toggleRow}>
                 <View style={styles.toggleInfo}>

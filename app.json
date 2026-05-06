@@ -43,14 +43,8 @@
           "icon": "./assets/icon.png",
           "color": "#1B5E20"
         }
-      ]
-    ],
-    "metro": {
-      "resolver": {
-        "alias": {
-          "react-native": "react-native-web"
-        }
-      }
-    }
+      ],
+      "expo-web-browser"
+    ]
   }
 }
