@@ -4,10 +4,10 @@ import {
 } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { collection, addDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { analyzeFoodImage } from '../services/AIScanService';
 import { useTheme } from '../context/ThemeContext';
+import { StorageService } from '../services/StorageService';
 
 export default function ScanScreen() {
   const { theme } = useTheme();
@@ -84,8 +84,7 @@ export default function ScanScreen() {
     if (!result) return;
     setSaving(true);
     try {
-      const user = auth.currentUser;
-      await addDoc(collection(db, 'users', user.uid, 'meals'), {
+      const meal = {
         name: result.name,
         icon: result.icon,
         calories: Math.round(result.calories * portionSize),
@@ -97,7 +96,8 @@ export default function ScanScreen() {
         zinc: Math.round(result.zinc * portionSize * 10) / 10,
         portionSize,
         date: new Date().toISOString(),
-      });
+      };
+      await StorageService.addMeal(meal);
       setSaved(true);
       Alert.alert('Meal Logged!', `${result.name} (${portionSize}x serving) saved to your diary.`);
     } catch (_) {

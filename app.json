@@ -1,11 +1,9 @@
 {
   "expo": {
     "name": "Smart Nutri Scanner",
+    "slug": "smartnutri",
     "scheme": "smartnutri",
-    "developmentClient": {
-      "silentLaunch": true
-    },
-    "version": "1.0.0",
+        "version": "1.0.0",
     "sdkVersion": "54.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -54,7 +52,6 @@
         }
       ],
       "expo-web-browser",
-      "expo-secure-store",
       "expo-font"
     ],
     "extra": {
