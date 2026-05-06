@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,14 @@ export default function TermsScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [accepted, setAccepted] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const termsText = `Terms of Service for Smart Nutri Scanner
 
@@ -52,6 +60,14 @@ These terms shall be interpreted and governed by the laws of the Philippines.`;
     navigation.navigate('Login');
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.light }]}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.light }]} showsVerticalScrollIndicator={false}>
       <LinearGradient colors={[theme.primary, theme.secondary]} style={[styles.header, { paddingTop: insets.top + 20 }]}>
@@ -88,6 +104,8 @@ These terms shall be interpreted and governed by the laws of the Philippines.`;
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 16, color: '#666' },
   container: { flex: 1 },
   header: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
   logoCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' },

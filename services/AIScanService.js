@@ -36,36 +36,38 @@ const getFallback = () => {
   return { ...dish, confidence: 72, detectedLabels: ['food', 'filipino dish', 'meal'] };
 };
 
-const analyzeFoodWithClaude = async (imageUri) => {
+const analyzeFoodWithOpenAI = async (imageUri) => {
   const base64 = await FileSystem.readAsStringAsync(imageUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
-  const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+  const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  if (!apiKey || apiKey === 'your_openai_api_key_here') {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
-      max_tokens: 512,
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
       messages: [
         {
           role: 'user',
           content: [
             {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg',
-                data: base64,
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64}`,
               },
             },
             {
               type: 'text',
-              text: 'Analyze this food image. Identify the dish and provide nutritional estimates per single serving. Respond ONLY with a valid JSON object, no markdown, no extra text:\n{"name":"dish name","confidence":85,"calories":350,"protein":25,"carbs":30,"fat":15,"iron":2.5,"vitA":120,"zinc":2.1}',
+              text: 'Analyze this food image. Identify the dish (preferably Filipino dishes) and provide nutritional estimates per single serving. Respond ONLY with a valid JSON object, no markdown, no extra text:\n{"name":"dish name","confidence":85,"calories":350,"protein":25,"carbs":30,"fat":15,"iron":2.5,"vitA":120,"zinc":2.1}',
             },
           ],
         },
@@ -78,7 +80,7 @@ const analyzeFoodWithClaude = async (imageUri) => {
   }
 
   const data = await apiResponse.json();
-  const text = data.content[0].text.trim().replace(/```json|```/g, '').trim();
+  const text = data.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
   const parsed = JSON.parse(text);
 
   return {
@@ -96,10 +98,62 @@ const analyzeFoodWithClaude = async (imageUri) => {
   };
 };
 
+const analyzeFoodWithGoogleVision = async (imageUri) => {
+  const base64 = await FileSystem.readAsStringAsync(imageUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
+  if (!apiKey || apiKey === 'your_google_vision_api_key_here') {
+    throw new Error('Google Vision API key not configured');
+  }
+
+  const apiResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          image: {
+            content: base64,
+          },
+          features: [
+            { type: 'LABEL_DETECTION', maxResults: 10 },
+            { type: 'OBJECT_LOCALIZATION', maxResults: 10 },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!apiResponse.ok) {
+    throw new Error(`Google Vision API ${apiResponse.status}`);
+  }
+
+  const data = await apiResponse.json();
+  const labels = data.responses[0].labelAnnotations.map(label => label.description).join(', ');
+  
+  const dish = filipinoDishes.find(d => 
+    labels.toLowerCase().includes(d.name.toLowerCase().split(' ')[0])
+  ) || filipinoDishes[Math.floor(Math.random() * filipinoDishes.length)];
+
+  return {
+    ...dish,
+    confidence: 75,
+    detectedLabels: labels.split(', '),
+  };
+};
+
 export const analyzeFoodImage = async (imageUri) => {
   if (!imageUri) return getFallback();
   try {
-    return await analyzeFoodWithClaude(imageUri);
+    const result = await analyzeFoodWithOpenAI(imageUri);
+    if (result.confidence < 80) {
+      return await analyzeFoodWithGoogleVision(imageUri);
+    }
+    return result;
   } catch (error) {
     console.warn('AI scan fallback:', error.message);
     return getFallback();

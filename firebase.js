@@ -14,9 +14,6 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Auth is managed by AuthContext via Firebase REST API.
-// AuthContext mutates auth.currentUser directly after login/logout
-// so all screens that do auth.currentUser get the live value.
 export const auth = {
   currentUser: null,
 };
